@@ -17,7 +17,8 @@ people in the same house are training for different divisions.
 - **Cumulative chart** — miles logged vs. required, with a table view
 - **Daily chart** — last 30 days against the goal line
 - **Pace** — enter distance and time; pace is derived per run, per day, per shoe
-- **Shoe mileage** — rotation totals and wear against a retirement threshold
+- **Shoe retirement** - per-pair advice driven by what the shoe is, not one
+  number for everything
 - **Streaks** — current and best run of days that cleared the minimum
 
 ## Training plan
@@ -40,6 +41,32 @@ lays itself out backwards from race day.
 
 The plan's structure, and the reasoning behind each choice, is documented at the
 bottom of the training view along with its sources.
+
+## When to retire a shoe
+
+Each pair gets its own recommendation instead of a single threshold, because a
+carbon racer and a daily trainer are not the same asset:
+
+| Type | Recommended | Why |
+|---|---|---|
+| Daily trainer | 300-500 mi | EVA/TPU midsole, the workhorse range |
+| Super trainer | 300-400 mi | supercritical foam fades before EVA does |
+| Carbon-plated racer | 150-250 mi | the foam fails, not the plate (peak feel gone by ~125 mi) |
+| Max cushion | 350-500 mi | deep stack, outlasts a standard trainer |
+| Trail | 300-500 mi | lugs decide it, not the midsole |
+| Cross-trainer / Hyrox | 300-400 mi | flat firm outsole built for sled work |
+
+Tick **Sled & station work** on a pair and its range drops 20%, because in Hyrox
+the outsole goes before the midsole - sled push grinds the tread flat and grip
+fails first. Those pairs also carry a standing reminder to check the tread
+before race day regardless of mileage.
+
+Set **Miles before tracking** for a pair that already had miles on it when you
+started logging. Each card projects a retirement date from your actual mileage
+over the last six weeks.
+
+These ranges are published guidance, not a rule - weight and running style move
+them.
 
 ## Two ways to run it
 

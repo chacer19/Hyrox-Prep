@@ -21,6 +21,7 @@
   --context:         #898781;
   --good:            #0ca30c;
   --warning:         #fab219;
+  --serious:         #ec835a;
   --critical:        #d03b3b;
   --success-text:    #006300;
   --border:          rgba(11,11,11,0.10);
@@ -173,6 +174,7 @@ tbody tr:hover { background: var(--ghost); }
 .meter { display: block; width: 100%; max-width: 150px; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
 .meter > span { display: block; height: 100%; border-radius: 3px; background: var(--series-1); }
 .meter.warn > span { background: var(--warning); }
+.meter.srs > span { background: var(--serious); }
 .meter.crit > span { background: var(--critical); }
 
 .status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 550; white-space: nowrap; }
@@ -196,6 +198,25 @@ tbody tr:hover { background: var(--ghost); }
 .conn.live { color: var(--success-text); border-color: currentColor; }
 .conn.warn { color: var(--critical); border-color: currentColor; text-transform: none;
   letter-spacing: 0; font-weight: 550; white-space: normal; }
+
+/* shoe retirement cards */
+.shoe-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 12px; }
+.shoe { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 15px; }
+.shoe-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.shoe-top h3 { margin: 0; font-size: 13.5px; font-weight: 650; }
+.shoe-mi { font-size: 13px; margin-bottom: 7px; font-variant-numeric: tabular-nums; }
+.shoe-mi b { font-size: 17px; font-weight: 650; }
+.shoe .muted-in { color: var(--text-secondary); font-size: 12px; }
+.shoe .meter { max-width: none; }
+.shoe-facts { font-size: 11.5px; color: var(--muted); margin-top: 7px; font-variant-numeric: tabular-nums; }
+.shoe-spec { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; margin-top: 11px; align-items: end; }
+.shoe-spec .field { font-size: 11px; }
+.shoe-spec .tick { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+.shoe-spec .tick input { width: auto; }
+.shoe-spec input[type="number"] { max-width: 92px; }
+.shoe-note { font-size: 11.5px; color: var(--text-secondary); margin-top: 8px; line-height: 1.45; }
+.shoe-note.grip { color: var(--serious); }
 
 /* read-only: viewing an athlete that isn't yours */
 .banner.lock { border-left-color: var(--series-1); display: flex; gap: 12px;
@@ -331,7 +352,7 @@ nav.tabs button.tab[aria-current="page"] {
       <label class="field">Daily minimum (mi)
         <input type="number" id="dailyGoal" min="0.1" step="0.1" value="1">
       </label>
-      <label class="field">Retire shoes at (mi)
+      <label class="field">Default retirement (mi)
         <input type="number" id="shoeLimit" min="50" step="10" value="400">
       </label>
     </div>
@@ -420,7 +441,7 @@ nav.tabs button.tab[aria-current="page"] {
     <div class="card-head">
       <div>
         <h2>Shoe mileage</h2>
-        <p class="sub">Rotation totals, with wear measured against your retirement threshold.</p>
+        <p class="sub">When to retire each pair, based on what the shoe is and how you use it — not one number for everything.</p>
       </div>
     </div>
     <div class="table-scroll" id="shoeTable"></div>
@@ -620,6 +641,29 @@ nav.tabs button.tab[aria-current="page"] {
     { n: 8, name: "Wall Balls",         spec: "100 reps", load: "ball" }
   ];
 
+  /* Recommended retirement mileage by shoe type. Ranges are the published
+     consensus: EVA/TPU trainers 300-500, supercritical "super trainers"
+     300-400, carbon-plated racers 150-250 (peak feel gone by ~100-125 —
+     the foam gives up long before the plate). Shoes also used for sled and
+     station work carry a 20% haircut, because in Hyrox the outsole goes
+     before the midsole: sled push grinds the tread flat and grip fails first. */
+  var SLED_FACTOR = 0.8;
+  var SHOE_TYPES = {
+    "":       { label: "Not set", lo: 0, hi: 0, note: "" },
+    daily:    { label: "Daily trainer", lo: 300, hi: 500,
+                note: "EVA or TPU midsole \u2014 the workhorse range." },
+    superTr:  { label: "Super trainer", lo: 300, hi: 400,
+                note: "Supercritical foam trades rebound for durability; it fades before EVA does." },
+    racer:    { label: "Carbon-plated racer", lo: 150, hi: 250, peak: 125,
+                note: "The foam fails, not the plate \u2014 the springy feel is largely gone by ~125 mi." },
+    max:      { label: "Max cushion", lo: 350, hi: 500,
+                note: "Deep stack; usually outlasts a standard trainer." },
+    trail:    { label: "Trail", lo: 300, hi: 500,
+                note: "Lugs decide it, not the midsole." },
+    cross:    { label: "Cross-trainer / Hyrox", lo: 300, hi: 400,
+                note: "Flat, firm outsole built for sled and gym work." }
+  };
+
   /* Published elite vs. average splits, used as target bands. */
   var BENCH = {
     men: {
@@ -717,7 +761,7 @@ nav.tabs button.tab[aria-current="page"] {
       id: id || newId(), name: name || "Athlete", division: "open-men",
       raceName: "", raceDate: "", planStart: "", dailyGoal: 1, shoeLimit: 400,
       daysPerWeek: 5, runBase: "low", ttDist: 0, ttSec: null,
-      runs: [], done: {}
+      runs: [], done: {}, shoeSpecs: {}
     };
   }
   function normalize(id, v) {
@@ -725,6 +769,7 @@ nav.tabs button.tab[aria-current="page"] {
     if (v) Object.keys(p).forEach(function (k) { if (v[k] !== undefined && k !== "id") p[k] = v[k]; });
     if (!Array.isArray(p.runs)) p.runs = [];
     if (!p.done || typeof p.done !== "object") p.done = {};
+    if (!p.shoeSpecs || typeof p.shoeSpecs !== "object") p.shoeSpecs = {};
     if (!DIVISIONS[p.division]) p.division = "open-men";
     return p;
   }
@@ -997,6 +1042,7 @@ nav.tabs button.tab[aria-current="page"] {
   global.HP = {
     onChange: onChange, emit: emit,
     KEY: KEY, DIVISIONS: DIVISIONS, LOADS: LOADS, STATIONS: STATIONS, BENCH: BENCH,
+    SHOE_TYPES: SHOE_TYPES, SLED_FACTOR: SLED_FACTOR,
     init: init, save: save, active: active, status: status,
     owned: owned, claim: claim, canEdit: canEdit,
     blankProfile: blankProfile, addAthlete: addAthlete, removeAthlete: removeAthlete,
@@ -1316,34 +1362,98 @@ nav.tabs button.tab[aria-current="page"] {
           (ok ? (over > 1e-9 ? "Over minimum" : "Met minimum") : "Under minimum") + "</span></td></tr>";
       }).join("") + "</tbody></table>" : '<p class="empty">Nothing logged yet.</p>';
 
-    // --- shoes ---
+    // --- shoes: per-pair retirement, driven by shoe type and how it's used ---
+    var today = HP.todayISO(), RECENT = 42;
     var shoes = {};
     state.runs.forEach(function (r) {
-      var name = (r.shoes || "").trim(); if (!name) name = "Unspecified";
+      var name = (r.shoes || "").trim(), unspec = !name;
+      if (unspec) name = "Unspecified";
       var key = name.toLowerCase();
-      if (!shoes[key]) shoes[key] = { name: name, miles: 0, runs: 0, sec: 0, timed: 0, last: r.date };
-      var sh = shoes[key];
-      sh.miles += Number(r.miles) || 0; sh.runs += 1;
-      if (r.seconds != null) { sh.sec += r.seconds; sh.timed += Number(r.miles) || 0; }
+      if (!shoes[key]) shoes[key] = { key: key, name: name, unspec: unspec, miles: 0, runs: 0,
+                                      sec: 0, timed: 0, recent: 0, last: r.date, first: r.date };
+      var sh = shoes[key], m = Number(r.miles) || 0;
+      sh.miles += m; sh.runs += 1;
+      if (r.seconds != null) { sh.sec += r.seconds; sh.timed += m; }
+      if (dayDiff(r.date, today) <= RECENT) sh.recent += m;
       if (r.date > sh.last) sh.last = r.date;
+      if (r.date < sh.first) sh.first = r.date;
     });
-    var list = Object.keys(shoes).map(function (k) { return shoes[k]; }).sort(function (a, b) { return b.miles - a.miles; });
-    var lim = Number(state.shoeLimit) > 0 ? Number(state.shoeLimit) : 400;
-    document.getElementById("shoeTable").innerHTML = list.length ? '<table><thead><tr><th>Shoes</th><th class="num">Runs</th><th class="num">Miles</th><th class="num">Avg pace</th><th>Wear</th><th>Status</th><th class="num">Last worn</th></tr></thead><tbody>' +
-      list.map(function (sh) {
-        var pct = Math.min(100, (sh.miles / lim) * 100);
-        var cls = pct >= 100 ? "crit" : pct >= 75 ? "warn" : "";
-        var label = pct >= 100 ? "Retire" : pct >= 75 ? "Wearing out" : "Good";
-        var col = pct >= 100 ? "var(--critical)" : pct >= 75 ? "var(--warning)" : "var(--good)";
-        return "<tr><td>" + esc(sh.name) + '</td><td class="num">' + sh.runs + '</td><td class="num">' + mi(sh.miles) +
-          '</td><td class="num">' + (sh.timed ? fmtPace(sh.sec, sh.timed) : "—") +
-          '</td><td><span class="meter ' + cls + '"><span style="width:' + pct.toFixed(1) + '%"></span></span></td>' +
-          '<td><span class="status"><span class="dot" style="background:' + col + '"></span>' + label + " " +
-          Math.round(pct) + '%</span></td><td class="num">' + esc(fmtShort(sh.last)) + "</td></tr>";
-      }).join("") + "</tbody></table>" : '<p class="empty">No shoes recorded yet — add them when you log a run.</p>';
+
+    var fallback = Number(state.shoeLimit) > 0 ? Number(state.shoeLimit) : 400;
+    var list = Object.keys(shoes).map(function (k) { return shoes[k]; })
+                     .sort(function (a, b) { return b.miles - a.miles; });
+
+    document.getElementById("shoeTable").innerHTML = list.length
+      ? '<div class="shoe-grid">' + list.map(function (sh) {
+          var spec = state.shoeSpecs[sh.key] || {};
+          var typeKey = HP.SHOE_TYPES[spec.type] ? spec.type : "";
+          var t = HP.SHOE_TYPES[typeKey];
+          var startMi = Number(spec.start) > 0 ? Number(spec.start) : 0;
+          var total = startMi + sh.miles;
+          var f = spec.sled ? HP.SLED_FACTOR : 1;
+          var typed = !!typeKey;
+          var lo = Math.round((typed ? t.lo : fallback * 0.75) * f);
+          var hi = Math.round((typed ? t.hi : fallback) * f);
+          var pct = hi > 0 ? Math.min(100, (total / hi) * 100) : 0;
+
+          var label, col, cls;
+          if (!hi)                    { label = "No target"; col = "var(--muted)";    cls = ""; }
+          else if (total >= hi)       { label = "Retire now"; col = "var(--critical)"; cls = "crit"; }
+          else if (total >= lo)       { label = "Replace soon"; col = "var(--serious)"; cls = "srs"; }
+          else if (total >= lo * 0.75){ label = "Monitor"; col = "var(--warning)";  cls = "warn"; }
+          else                        { label = "Good"; col = "var(--good)";      cls = ""; }
+
+          // burn rate from the last six weeks with this pair
+          var perWk = sh.recent / (RECENT / 7);
+          var proj = "";
+          if (hi && total < hi && perWk >= 0.25) {
+            var wks = (hi - total) / perWk;
+            proj = mi(perWk).replace(/\.?0+$/, "") + " mi/wk \u00b7 about " +
+                   (wks < 1 ? "under a week" : Math.round(wks) + " week" + (Math.round(wks) === 1 ? "" : "s")) +
+                   " left \u00b7 around " + esc(fmtShort(addDays(today, Math.round(wks * 7))));
+          } else if (hi && total >= hi) {
+            proj = "Past the recommended range \u2014 rotate a fresh pair in.";
+          } else if (hi) {
+            proj = "Not enough recent mileage to project a date.";
+          }
+
+          var opts = Object.keys(HP.SHOE_TYPES).map(function (k) {
+            return '<option value="' + k + '"' + (k === typeKey ? " selected" : "") + ">" +
+                   esc(HP.SHOE_TYPES[k].label) + "</option>";
+          }).join("");
+
+          return '<div class="shoe">' +
+            '<div class="shoe-top"><h3>' + esc(sh.name) + "</h3>" +
+            (sh.unspec ? "" : '<span class="status"><span class="dot" style="background:' + col + '"></span>' + label + "</span>") +
+            "</div>" +
+            '<div class="shoe-mi"><b>' + mi(total) + "</b> mi" +
+            (startMi ? " total" : "") +
+            (hi ? ' <span class="muted-in">of ' + lo + "\u2013" + hi + " mi recommended</span>" : "") +
+            "</div>" +
+            (hi ? '<span class="meter ' + cls + '"><span style="width:' + pct.toFixed(1) + '%"></span></span>' : "") +
+            '<div class="shoe-facts">' + sh.runs + " run" + (sh.runs === 1 ? "" : "s") +
+            (sh.timed ? " \u00b7 " + fmtPace(sh.sec, sh.timed) + "/mi avg" : "") +
+            " \u00b7 last worn " + esc(fmtShort(sh.last)) + "</div>" +
+            (sh.unspec ? '<div class="shoe-note">Runs logged without a shoe name.</div>' :
+              '<div class="shoe-spec">' +
+                '<label class="field">Type<select data-shoe-type="' + esc(sh.key) + '">' + opts + "</select></label>" +
+                '<label class="field">Miles before tracking' +
+                  '<input type="number" min="0" step="1" data-shoe-start="' + esc(sh.key) + '" value="' + (startMi || "") + '" placeholder="0"></label>' +
+                '<label class="tick"><input type="checkbox" data-shoe-sled="' + esc(sh.key) + '"' +
+                  (spec.sled ? " checked" : "") + "> Sled &amp; station work</label>" +
+              "</div>" +
+              (proj ? '<div class="shoe-note">' + proj + "</div>" : "") +
+              (typed && t.note ? '<div class="shoe-note">' + t.note + "</div>" : "") +
+              (spec.sled ? '<div class="shoe-note grip">Sled push wears the outsole before the midsole \u2014 check the tread for grip before race day, whatever the mileage says.</div>' : "")
+            ) +
+            "</div>";
+        }).join("") + "</div>" +
+        '<p class="foot-note">Ranges are published guidance, not a rule: how heavy you are and how hard you run move them. ' +
+        "Set <b>Miles before tracking</b> if a pair already had miles on it when you started logging.</p>"
+      : '<p class="empty">No shoes recorded yet \u2014 add them when you log a run.</p>';
 
     var dl = document.getElementById("shoeList");
-    dl.innerHTML = list.filter(function (sh) { return sh.name !== "Unspecified"; })
+    dl.innerHTML = list.filter(function (sh) { return !sh.unspec; })
       .map(function (sh) { return '<option value="' + esc(sh.name) + '">'; }).join("");
 
     // --- run log ---
@@ -1467,6 +1577,21 @@ nav.tabs button.tab[aria-current="page"] {
     if (!r) return;
     if (!confirm("Delete the " + mi(r.miles) + " mi run on " + fmtShort(r.date) + "?")) return;
     state.runs = state.runs.filter(function (x) { return x.id !== id; });
+    save(); render();
+  });
+
+  document.getElementById("shoeTable").addEventListener("change", function (e) {
+    var el = e.target, d = el.dataset || {};
+    var key = d.shoeType !== undefined ? d.shoeType
+            : d.shoeStart !== undefined ? d.shoeStart
+            : d.shoeSled !== undefined ? d.shoeSled : null;
+    if (key === null) return;
+    if (!HP.canEdit()) { render(); return; }
+    if (!state.shoeSpecs) state.shoeSpecs = {};
+    var spec = state.shoeSpecs[key] || (state.shoeSpecs[key] = {});
+    if (d.shoeType !== undefined) spec.type = el.value;
+    else if (d.shoeStart !== undefined) spec.start = Math.max(0, Number(el.value) || 0);
+    else spec.sled = el.checked;
     save(); render();
   });
 
