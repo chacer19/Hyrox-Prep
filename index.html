@@ -5,63 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hyrox Prep</title>
 <style>
-/* Hyrox Prep — shared design tokens and components (index.html + training.html) */
-/* ---------- tokens ---------- */
+/* Hyrox Prep — Nocturne skin. Token names and class names are unchanged from the
+   original sheet, so every chart, table and script that reads var(--series-1),
+   var(--grid), var(--axis) etc. keeps working. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
 :root {
-  color-scheme: light;
-  --page:            #f9f9f7;
-  --surface-1:       #fcfcfb;
-  --text-primary:    #0b0b0b;
-  --text-secondary:  #52514e;
-  --muted:           #898781;
-  --grid:            #e1e0d9;
-  --axis:            #c3c2b7;
-  --series-1:        #2a78d6;
-  --series-1-wash:   rgba(42,120,214,0.10);
-  --context:         #898781;
-  --good:            #0ca30c;
-  --warning:         #fab219;
-  --serious:         #ec835a;
-  --critical:        #d03b3b;
-  --success-text:    #006300;
-  --border:          rgba(11,11,11,0.10);
-  --ghost:           rgba(11,11,11,0.04);
-  --radius:          10px;
-  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --page:           #0d0d0d;
-    --surface-1:      #1a1a19;
-    --text-primary:   #ffffff;
-    --text-secondary: #c3c2b7;
-    --muted:          #898781;
-    --grid:           #2c2c2a;
-    --axis:           #383835;
-    --series-1:       #3987e5;
-    --series-1-wash:  rgba(57,135,229,0.12);
-    --context:        #898781;
-    --success-text:   #0ca30c;
-    --border:         rgba(255,255,255,0.10);
-    --ghost:          rgba(255,255,255,0.05);
-  }
-}
-:root[data-theme="dark"] {
   color-scheme: dark;
-  --page:           #0d0d0d;
-  --surface-1:      #1a1a19;
-  --text-primary:   #ffffff;
-  --text-secondary: #c3c2b7;
-  --muted:          #898781;
-  --grid:           #2c2c2a;
-  --axis:           #383835;
-  --series-1:       #3987e5;
-  --series-1-wash:  rgba(57,135,229,0.12);
-  --context:        #898781;
-  --success-text:   #0ca30c;
-  --border:         rgba(255,255,255,0.10);
-  --ghost:          rgba(255,255,255,0.05);
+  --page:            #161826;
+  --surface-1:       #232532;
+  --text-primary:    #e9e9ed;
+  --text-secondary:  #b2b6ca;
+  --muted:           #9397ab;
+  --grid:            #292b31;
+  --axis:            #3f424d;
+  --series-1:        #9184d9;
+  --series-1-wash:   rgba(145,132,217,0.12);
+  --context:         #75798c;
+  --good:            #9184d9;
+  --warning:         #b5abfc;
+  --critical:        #e7e5fe;
+  --success-text:    #b5abfc;
+  --border:          #3f424d;
+  --ghost:           rgba(233,233,237,0.06);
+  --radius:          8px;
+  --sans: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 /* ---------- base ---------- */
@@ -70,23 +38,30 @@ html, body { margin: 0; padding: 0; }
 body {
   background: var(--page);
   color: var(--text-primary);
-  font: 14px/1.5 var(--sans);
+  font: 15px/1.55 var(--sans);
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
 }
-.wrap { max-width: 1120px; margin: 0 auto; padding: 24px 20px 72px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 20px 18px 104px; }
+a { color: var(--series-1); text-underline-offset: 3px; }
+a:hover { color: #b5abfc; }
+::selection { background: rgba(145,132,217,0.3); }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
 
-h1 { font-size: 20px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
-h2 { font-size: 14px; font-weight: 650; margin: 0 0 2px; letter-spacing: -0.005em; }
+h1 { font-size: 21px; font-weight: 500; margin: 0; letter-spacing: -0.015em; }
+h2 { font-size: 16px; font-weight: 500; margin: 0 0 3px; letter-spacing: -0.01em; }
+h3 { font-weight: 500; }
 .sub { color: var(--text-secondary); font-size: 12.5px; margin: 0; }
 
 header.top {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+  gap: 14px; margin-bottom: 18px; flex-wrap: wrap;
 }
 .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .brand .tag {
-  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--muted); font-weight: 600;
+  font-size: 11.5px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--muted); font-weight: 500;
 }
 
 /* ---------- cards ---------- */
@@ -94,56 +69,62 @@ header.top {
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
-  margin-bottom: 16px;
+  padding: 17px 16px;
+  margin-bottom: 14px;
 }
-.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 13px; flex-wrap: wrap; }
 
 /* ---------- controls ---------- */
-label.field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--text-secondary); font-weight: 550; }
+label.field { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--text-secondary); font-weight: 400; }
 input, select, textarea, button { font: inherit; font-family: var(--sans); color: inherit; }
 input[type="date"], input[type="text"], input[type="number"], select, textarea {
   background: var(--page);
   border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 7px 9px;
+  border-radius: var(--radius);
+  padding: 11px 11px;
   color: var(--text-primary);
-  width: 100%;
-  min-width: 0;
+  width: 100%; min-width: 0;
+  font-size: 15px;
 }
-input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
-  outline: 2px solid var(--series-1); outline-offset: 1px;
-}
+input:focus, select:focus, textarea:focus { border-color: var(--series-1); }
 button {
-  background: var(--page); border: 1px solid var(--border);
-  border-radius: 7px; padding: 7px 12px; cursor: pointer; font-weight: 550;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 13px; cursor: pointer;
+  font-weight: 500; font-size: 14px; min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
 }
 button:hover { background: var(--ghost); }
-button.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
-button.primary:hover { filter: brightness(1.07); }
-button.ghost { background: transparent; }
-button.icon { padding: 4px 8px; font-size: 12px; color: var(--text-secondary); }
-.row { display: grid; gap: 12px; }
+button:active { background: rgba(233,233,237,0.12); }
+button.primary { background: transparent; border-color: var(--series-1); color: var(--series-1); }
+button.primary:hover { background: rgba(145,132,217,0.12); filter: none; }
+button.primary:active { background: rgba(145,132,217,0.22); }
+button.ghost { background: transparent; border-color: var(--border); }
+button.icon { padding: 8px 10px; min-height: 40px; font-size: 12.5px; color: var(--text-secondary); border-color: transparent; }
+button.icon:hover { background: var(--ghost); }
+button.danger { background: transparent; border-color: var(--critical); color: var(--critical); }
+button.danger:hover { background: rgba(231,229,254,0.1); filter: none; }
+#btnTheme { display: none; }      /* Nocturne is a single dark theme */
+.row { display: grid; gap: 11px; }
 .setup-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
-.log-grid   { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); align-items: end; }
+.log-grid   { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); align-items: end; }
 
 /* ---------- hero + stat tiles ---------- */
-.hero-wrap { display: grid; grid-template-columns: minmax(230px, 1fr) 2fr; gap: 16px; align-items: stretch; }
-@media (max-width: 760px) { .hero-wrap { grid-template-columns: 1fr; } }
+.hero-wrap { display: grid; grid-template-columns: minmax(230px, 1fr) 2fr; gap: 14px; align-items: stretch; }
+@media (max-width: 860px) { .hero-wrap { grid-template-columns: 1fr; } }
 
 .hero { display: flex; flex-direction: column; justify-content: center; }
-.hero .figure { font-size: 60px; font-weight: 680; line-height: 1; letter-spacing: -0.03em; }
+.hero .figure { font-size: clamp(46px, 15vw, 62px); font-weight: 500; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .hero .figure.small { font-size: 34px; }
-.hero .figure-label { color: var(--text-secondary); font-size: 13px; margin-top: 8px; }
-.hero .race-name { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.hero .figure-label { color: var(--text-secondary); font-size: 13px; margin-top: 10px; }
+.hero .race-name { color: var(--series-1); font-size: 13px; font-weight: 500; margin-top: 6px; }
 
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 10px; align-content: start; }
-.kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
-.kpi .k-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 550; }
-.kpi .k-value { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 3px; }
-.kpi .k-note  { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-.pos { color: var(--success-text); }
-.neg { color: var(--critical); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; align-content: start; }
+.kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 14px; }
+.kpi .k-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; }
+.kpi .k-value { font-size: 25px; font-weight: 500; letter-spacing: -0.02em; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.kpi .k-note  { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+.pos { color: var(--warning); }
+.neg { color: var(--text-secondary); }
 
 /* ---------- charts ---------- */
 .chart-box { position: relative; }
@@ -153,18 +134,18 @@ svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
 .swatch { width: 11px; height: 3px; border-radius: 2px; display: inline-block; }
 .tooltip {
   position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s;
-  background: var(--surface-1); border: 1px solid var(--border);
-  border-radius: 7px; padding: 8px 10px; font-size: 12px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.13); z-index: 5; min-width: 128px;
+  background: #262a3d; border: 1px solid #5d5294;
+  border-radius: var(--radius); padding: 9px 11px; font-size: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.55); z-index: 5; min-width: 132px;
 }
-.tooltip .tt-title { font-weight: 620; margin-bottom: 4px; }
+.tooltip .tt-title { font-weight: 500; margin-bottom: 5px; }
 .tooltip .tt-row { display: flex; justify-content: space-between; gap: 14px; color: var(--text-secondary); }
-.tooltip .tt-row b { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+.tooltip .tt-row b { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
 
 /* ---------- tables ---------- */
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.045em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: left; padding: 11px 10px; border-bottom: 1px solid rgba(233,233,237,0.08); }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 500; white-space: nowrap; border-bottom-color: var(--border); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:hover { background: var(--ghost); }
 .table-scroll { overflow-x: auto; }
@@ -174,49 +155,29 @@ tbody tr:hover { background: var(--ghost); }
 .meter { display: block; width: 100%; max-width: 150px; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
 .meter > span { display: block; height: 100%; border-radius: 3px; background: var(--series-1); }
 .meter.warn > span { background: var(--warning); }
-.meter.srs > span { background: var(--serious); }
 .meter.crit > span { background: var(--critical); }
 
-.status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 550; white-space: nowrap; }
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 400; white-space: nowrap; }
 .status .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-.foot-note { color: var(--muted); font-size: 11.5px; margin-top: 10px; }
+.foot-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .hidden { display: none !important; }
 .profile-bar {
-  display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;
+  display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;
   background: var(--surface-1); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px;
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
 }
-.profile-pick { min-width: 220px; }
+.profile-pick { min-width: 200px; flex: 1 1 200px; }
 .profile-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
 .profile-warn { font-size: 13px; color: var(--text-secondary); align-self: center; }
 .conn {
-  font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase;
   color: var(--muted); border: 1px solid var(--border); border-radius: 20px;
-  padding: 3px 9px; align-self: center; white-space: nowrap;
+  padding: 4px 10px; align-self: center; white-space: nowrap;
 }
-.conn.live { color: var(--success-text); border-color: currentColor; }
+.conn.live { color: var(--series-1); border-color: currentColor; }
 .conn.warn { color: var(--critical); border-color: currentColor; text-transform: none;
-  letter-spacing: 0; font-weight: 550; white-space: normal; }
-
-/* shoe retirement cards */
-.shoe-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 12px; }
-.shoe { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 15px; }
-.shoe-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
-.shoe-top h3 { margin: 0; font-size: 13.5px; font-weight: 650; }
-.shoe-mi { font-size: 13px; margin-bottom: 7px; font-variant-numeric: tabular-nums; }
-.shoe-mi b { font-size: 17px; font-weight: 650; }
-.shoe .muted-in { color: var(--text-secondary); font-size: 12px; }
-.shoe .meter { max-width: none; }
-.shoe-facts { font-size: 11.5px; color: var(--muted); margin-top: 7px; font-variant-numeric: tabular-nums; }
-.shoe-spec { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; margin-top: 11px; align-items: end; }
-.shoe-spec .field { font-size: 11px; }
-.shoe-spec .tick { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px;
-  font-size: 12px; color: var(--text-secondary); cursor: pointer; }
-.shoe-spec .tick input { width: auto; }
-.shoe-spec input[type="number"] { max-width: 92px; }
-.shoe-note { font-size: 11.5px; color: var(--text-secondary); margin-top: 8px; line-height: 1.45; }
-.shoe-note.grip { color: var(--serious); }
+  letter-spacing: 0; font-weight: 400; white-space: normal; }
 
 /* read-only: viewing an athlete that isn't yours */
 .banner.lock { border-left-color: var(--series-1); display: flex; gap: 12px;
@@ -225,83 +186,96 @@ tbody tr:hover { background: var(--ghost); }
 body.readonly [data-del] { display: none; }
 body.readonly input:disabled,
 body.readonly select:disabled,
-body.readonly textarea:disabled { opacity: .6; cursor: not-allowed; }
-/* a disabled control must not still look pressable */
+body.readonly textarea:disabled { opacity: .45; cursor: not-allowed; }
 body.readonly button:disabled { opacity: .45; cursor: not-allowed; filter: none; }
-body.readonly button:disabled:hover { background: var(--page); }
-body.readonly button.primary:disabled:hover { background: var(--series-1); }
+body.readonly button:disabled:hover { background: transparent; }
+body.readonly button.primary:disabled:hover { background: transparent; }
 body.readonly .session .tick { opacity: .5; }
-button.danger { background: var(--critical); border-color: var(--critical); color: #fff; }
-button.danger:hover { filter: brightness(1.07); }
-nav.tabs { display: flex; gap: 4px; }
-nav.tabs a {
-  text-decoration: none; color: var(--text-secondary); font-weight: 550;
-  padding: 6px 12px; border-radius: 7px; border: 1px solid transparent; font-size: 13px;
-}
-nav.tabs a:hover { background: var(--ghost); }
-nav.tabs a[aria-current="page"] { background: var(--ghost); border-color: var(--border); color: var(--text-primary); }
-.banner {
-  border: 1px solid var(--border); border-left: 3px solid var(--warning);
-  background: var(--surface-1); border-radius: 7px; padding: 11px 13px;
-  font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;
-}
 
-/* view tabs */
-nav.tabs { display: flex; gap: 4px; }
-nav.tabs button.tab {
+/* ---------- view tabs → bottom bar on phones ---------- */
+nav.tabs { display: flex; gap: 6px; }
+nav.tabs a, nav.tabs button.tab {
   background: transparent; border: 1px solid transparent; color: var(--text-secondary);
-  font-weight: 550; padding: 6px 12px; border-radius: 7px; font-size: 13px; cursor: pointer;
+  font-weight: 500; padding: 9px 14px; border-radius: var(--radius); font-size: 13.5px;
+  cursor: pointer; text-decoration: none; min-height: 44px;
 }
-nav.tabs button.tab:hover { background: var(--ghost); }
-nav.tabs button.tab[aria-current="page"] {
-  background: var(--ghost); border-color: var(--border); color: var(--text-primary);
+nav.tabs a:hover, nav.tabs button.tab:hover { background: var(--ghost); }
+nav.tabs a[aria-current="page"], nav.tabs button.tab[aria-current="page"] {
+  background: rgba(145,132,217,0.14); border-color: var(--series-1); color: #d2cefd;
+}
+@media (max-width: 760px) {
+  header.top { align-items: flex-start; }
+  header.top .actions { order: 3; }
+  nav.tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; gap: 4px;
+    background: rgba(22,24,38,0.94); backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 0 rgba(233,233,237,0.12);
+    padding: 7px 7px calc(7px + env(safe-area-inset-bottom));
+  }
+  nav.tabs button.tab { flex: 1; text-align: center; min-height: 52px; }
 }
 
-.phase-bar { display: flex; gap: 3px; margin: 14px 0 6px; }
-.phase-seg { height: 8px; border-radius: 3px; flex: 1 1 auto; background: var(--grid); }
-.phase-seg.done { background: var(--series-1); opacity: .45; }
+.banner {
+  border: 1px solid var(--border); border-left: 3px solid var(--series-1);
+  background: var(--surface-1); border-radius: var(--radius); padding: 12px 14px;
+  font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;
+}
+
+.phase-bar { display: flex; gap: 3px; margin: 14px 0 9px; }
+.phase-seg { height: 10px; border-radius: 3px; flex: 1 1 auto; background: var(--axis); }
+.phase-seg.done { background: #5d5294; }
 .phase-seg.now  { background: var(--series-1); }
-.phase-key { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--text-secondary); }
+.phase-key { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); }
+.phase-key b { color: var(--text-primary); font-weight: 500; }
 
-.sessions { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.sessions { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 11px; }
 .session {
   border: 1px solid var(--border); border-radius: var(--radius);
   padding: 14px 15px; background: var(--surface-1);
 }
-.session.rest { background: transparent; border-style: dashed; }
-.session.done { border-color: var(--series-1); }
-.session h3 { margin: 0 0 1px; font-size: 13.5px; font-weight: 650; }
-.session .when { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
-.session ul { margin: 9px 0 0; padding-left: 17px; color: var(--text-secondary); font-size: 12.5px; }
-.session li { margin-bottom: 4px; }
-.session li b { color: var(--text-primary); font-weight: 600; }
-.session .tick { display: flex; align-items: center; gap: 7px; margin-top: 11px; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
-.session .tick input { width: auto; }
+.session.rest { background: #1b1d2c; border-style: dashed; }
+.session.done { border-color: #5d5294; background: #1e2030; }
+.session h3 { margin: 0 0 2px; font-size: 15.5px; font-weight: 500; letter-spacing: -0.01em; }
+.session .when { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 500; }
+.session ul { margin: 10px 0 0; padding-left: 16px; color: var(--text-secondary); font-size: 12.5px; }
+.session li { margin-bottom: 5px; }
+.session li::marker { color: var(--context); }
+.session li b { color: var(--text-primary); font-weight: 500; }
+.session .tick { display: flex; align-items: center; gap: 9px; margin-top: 12px; min-height: 44px; font-size: 12.5px; color: var(--text-secondary); cursor: pointer; }
+.session .tick input { width: auto; accent-color: var(--series-1); }
 
-.wk { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
+.wk { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; background: var(--surface-1); }
 .wk > summary {
-  cursor: pointer; padding: 11px 14px; display: flex; gap: 12px; align-items: center;
-  flex-wrap: wrap; font-size: 13px; list-style: none;
+  cursor: pointer; padding: 13px 14px; display: flex; gap: 11px; align-items: center;
+  flex-wrap: wrap; font-size: 13.5px; list-style: none; min-height: 52px;
 }
 .wk > summary::-webkit-details-marker { display: none; }
 .wk > summary:hover { background: var(--ghost); }
 .wk[open] > summary { border-bottom: 1px solid var(--border); }
-.wk .wk-n { font-weight: 650; min-width: 62px; }
-.wk .wk-phase { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; min-width: 88px; }
+.wk .wk-n { font-weight: 500; min-width: 62px; }
+.wk .wk-phase { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 500; min-width: 84px; }
 .wk .wk-meta { color: var(--text-secondary); margin-left: auto; font-variant-numeric: tabular-nums; }
 .wk .wk-body { padding: 14px; }
 .pill {
-  display: inline-block; font-size: 10.5px; font-weight: 650; letter-spacing: .04em;
-  text-transform: uppercase; padding: 2px 7px; border-radius: 20px;
+  display: inline-block; font-size: 10.5px; font-weight: 500; letter-spacing: .07em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 20px;
   border: 1px solid var(--border); color: var(--text-secondary);
 }
-.pill.now { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+.pill.now { background: rgba(145,132,217,0.14); border-color: var(--series-1); color: #d2cefd; }
 .pill.sim { border-color: var(--warning); color: var(--warning); }
-.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-.src { font-size: 12px; color: var(--text-secondary); }
+.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.src { font-size: 12.5px; color: var(--text-secondary); }
 .src a { color: var(--series-1); }
-.src li { margin-bottom: 3px; }
+.src li { margin-bottom: 4px; }
 </style>
+<meta name="theme-color" content="#161826">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hyrox Prep">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 </head>
 <body>
 <div class="wrap">
@@ -352,7 +326,7 @@ nav.tabs button.tab[aria-current="page"] {
       <label class="field">Daily minimum (mi)
         <input type="number" id="dailyGoal" min="0.1" step="0.1" value="1">
       </label>
-      <label class="field">Default retirement (mi)
+      <label class="field">Retire shoes at (mi)
         <input type="number" id="shoeLimit" min="50" step="10" value="400">
       </label>
     </div>
@@ -441,7 +415,7 @@ nav.tabs button.tab[aria-current="page"] {
     <div class="card-head">
       <div>
         <h2>Shoe mileage</h2>
-        <p class="sub">When to retire each pair, based on what the shoe is and how you use it — not one number for everything.</p>
+        <p class="sub">Rotation totals, with wear measured against your retirement threshold.</p>
       </div>
     </div>
     <div class="table-scroll" id="shoeTable"></div>
@@ -641,29 +615,6 @@ nav.tabs button.tab[aria-current="page"] {
     { n: 8, name: "Wall Balls",         spec: "100 reps", load: "ball" }
   ];
 
-  /* Recommended retirement mileage by shoe type. Ranges are the published
-     consensus: EVA/TPU trainers 300-500, supercritical "super trainers"
-     300-400, carbon-plated racers 150-250 (peak feel gone by ~100-125 —
-     the foam gives up long before the plate). Shoes also used for sled and
-     station work carry a 20% haircut, because in Hyrox the outsole goes
-     before the midsole: sled push grinds the tread flat and grip fails first. */
-  var SLED_FACTOR = 0.8;
-  var SHOE_TYPES = {
-    "":       { label: "Not set", lo: 0, hi: 0, note: "" },
-    daily:    { label: "Daily trainer", lo: 300, hi: 500,
-                note: "EVA or TPU midsole \u2014 the workhorse range." },
-    superTr:  { label: "Super trainer", lo: 300, hi: 400,
-                note: "Supercritical foam trades rebound for durability; it fades before EVA does." },
-    racer:    { label: "Carbon-plated racer", lo: 150, hi: 250, peak: 125,
-                note: "The foam fails, not the plate \u2014 the springy feel is largely gone by ~125 mi." },
-    max:      { label: "Max cushion", lo: 350, hi: 500,
-                note: "Deep stack; usually outlasts a standard trainer." },
-    trail:    { label: "Trail", lo: 300, hi: 500,
-                note: "Lugs decide it, not the midsole." },
-    cross:    { label: "Cross-trainer / Hyrox", lo: 300, hi: 400,
-                note: "Flat, firm outsole built for sled and gym work." }
-  };
-
   /* Published elite vs. average splits, used as target bands. */
   var BENCH = {
     men: {
@@ -761,7 +712,7 @@ nav.tabs button.tab[aria-current="page"] {
       id: id || newId(), name: name || "Athlete", division: "open-men",
       raceName: "", raceDate: "", planStart: "", dailyGoal: 1, shoeLimit: 400,
       daysPerWeek: 5, runBase: "low", ttDist: 0, ttSec: null,
-      runs: [], done: {}, shoeSpecs: {}
+      runs: [], done: {}
     };
   }
   function normalize(id, v) {
@@ -769,7 +720,6 @@ nav.tabs button.tab[aria-current="page"] {
     if (v) Object.keys(p).forEach(function (k) { if (v[k] !== undefined && k !== "id") p[k] = v[k]; });
     if (!Array.isArray(p.runs)) p.runs = [];
     if (!p.done || typeof p.done !== "object") p.done = {};
-    if (!p.shoeSpecs || typeof p.shoeSpecs !== "object") p.shoeSpecs = {};
     if (!DIVISIONS[p.division]) p.division = "open-men";
     return p;
   }
@@ -1042,7 +992,6 @@ nav.tabs button.tab[aria-current="page"] {
   global.HP = {
     onChange: onChange, emit: emit,
     KEY: KEY, DIVISIONS: DIVISIONS, LOADS: LOADS, STATIONS: STATIONS, BENCH: BENCH,
-    SHOE_TYPES: SHOE_TYPES, SLED_FACTOR: SLED_FACTOR,
     init: init, save: save, active: active, status: status,
     owned: owned, claim: claim, canEdit: canEdit,
     blankProfile: blankProfile, addAthlete: addAthlete, removeAthlete: removeAthlete,
@@ -1362,98 +1311,34 @@ nav.tabs button.tab[aria-current="page"] {
           (ok ? (over > 1e-9 ? "Over minimum" : "Met minimum") : "Under minimum") + "</span></td></tr>";
       }).join("") + "</tbody></table>" : '<p class="empty">Nothing logged yet.</p>';
 
-    // --- shoes: per-pair retirement, driven by shoe type and how it's used ---
-    var today = HP.todayISO(), RECENT = 42;
+    // --- shoes ---
     var shoes = {};
     state.runs.forEach(function (r) {
-      var name = (r.shoes || "").trim(), unspec = !name;
-      if (unspec) name = "Unspecified";
+      var name = (r.shoes || "").trim(); if (!name) name = "Unspecified";
       var key = name.toLowerCase();
-      if (!shoes[key]) shoes[key] = { key: key, name: name, unspec: unspec, miles: 0, runs: 0,
-                                      sec: 0, timed: 0, recent: 0, last: r.date, first: r.date };
-      var sh = shoes[key], m = Number(r.miles) || 0;
-      sh.miles += m; sh.runs += 1;
-      if (r.seconds != null) { sh.sec += r.seconds; sh.timed += m; }
-      if (dayDiff(r.date, today) <= RECENT) sh.recent += m;
+      if (!shoes[key]) shoes[key] = { name: name, miles: 0, runs: 0, sec: 0, timed: 0, last: r.date };
+      var sh = shoes[key];
+      sh.miles += Number(r.miles) || 0; sh.runs += 1;
+      if (r.seconds != null) { sh.sec += r.seconds; sh.timed += Number(r.miles) || 0; }
       if (r.date > sh.last) sh.last = r.date;
-      if (r.date < sh.first) sh.first = r.date;
     });
-
-    var fallback = Number(state.shoeLimit) > 0 ? Number(state.shoeLimit) : 400;
-    var list = Object.keys(shoes).map(function (k) { return shoes[k]; })
-                     .sort(function (a, b) { return b.miles - a.miles; });
-
-    document.getElementById("shoeTable").innerHTML = list.length
-      ? '<div class="shoe-grid">' + list.map(function (sh) {
-          var spec = state.shoeSpecs[sh.key] || {};
-          var typeKey = HP.SHOE_TYPES[spec.type] ? spec.type : "";
-          var t = HP.SHOE_TYPES[typeKey];
-          var startMi = Number(spec.start) > 0 ? Number(spec.start) : 0;
-          var total = startMi + sh.miles;
-          var f = spec.sled ? HP.SLED_FACTOR : 1;
-          var typed = !!typeKey;
-          var lo = Math.round((typed ? t.lo : fallback * 0.75) * f);
-          var hi = Math.round((typed ? t.hi : fallback) * f);
-          var pct = hi > 0 ? Math.min(100, (total / hi) * 100) : 0;
-
-          var label, col, cls;
-          if (!hi)                    { label = "No target"; col = "var(--muted)";    cls = ""; }
-          else if (total >= hi)       { label = "Retire now"; col = "var(--critical)"; cls = "crit"; }
-          else if (total >= lo)       { label = "Replace soon"; col = "var(--serious)"; cls = "srs"; }
-          else if (total >= lo * 0.75){ label = "Monitor"; col = "var(--warning)";  cls = "warn"; }
-          else                        { label = "Good"; col = "var(--good)";      cls = ""; }
-
-          // burn rate from the last six weeks with this pair
-          var perWk = sh.recent / (RECENT / 7);
-          var proj = "";
-          if (hi && total < hi && perWk >= 0.25) {
-            var wks = (hi - total) / perWk;
-            proj = mi(perWk).replace(/\.?0+$/, "") + " mi/wk \u00b7 about " +
-                   (wks < 1 ? "under a week" : Math.round(wks) + " week" + (Math.round(wks) === 1 ? "" : "s")) +
-                   " left \u00b7 around " + esc(fmtShort(addDays(today, Math.round(wks * 7))));
-          } else if (hi && total >= hi) {
-            proj = "Past the recommended range \u2014 rotate a fresh pair in.";
-          } else if (hi) {
-            proj = "Not enough recent mileage to project a date.";
-          }
-
-          var opts = Object.keys(HP.SHOE_TYPES).map(function (k) {
-            return '<option value="' + k + '"' + (k === typeKey ? " selected" : "") + ">" +
-                   esc(HP.SHOE_TYPES[k].label) + "</option>";
-          }).join("");
-
-          return '<div class="shoe">' +
-            '<div class="shoe-top"><h3>' + esc(sh.name) + "</h3>" +
-            (sh.unspec ? "" : '<span class="status"><span class="dot" style="background:' + col + '"></span>' + label + "</span>") +
-            "</div>" +
-            '<div class="shoe-mi"><b>' + mi(total) + "</b> mi" +
-            (startMi ? " total" : "") +
-            (hi ? ' <span class="muted-in">of ' + lo + "\u2013" + hi + " mi recommended</span>" : "") +
-            "</div>" +
-            (hi ? '<span class="meter ' + cls + '"><span style="width:' + pct.toFixed(1) + '%"></span></span>' : "") +
-            '<div class="shoe-facts">' + sh.runs + " run" + (sh.runs === 1 ? "" : "s") +
-            (sh.timed ? " \u00b7 " + fmtPace(sh.sec, sh.timed) + "/mi avg" : "") +
-            " \u00b7 last worn " + esc(fmtShort(sh.last)) + "</div>" +
-            (sh.unspec ? '<div class="shoe-note">Runs logged without a shoe name.</div>' :
-              '<div class="shoe-spec">' +
-                '<label class="field">Type<select data-shoe-type="' + esc(sh.key) + '">' + opts + "</select></label>" +
-                '<label class="field">Miles before tracking' +
-                  '<input type="number" min="0" step="1" data-shoe-start="' + esc(sh.key) + '" value="' + (startMi || "") + '" placeholder="0"></label>' +
-                '<label class="tick"><input type="checkbox" data-shoe-sled="' + esc(sh.key) + '"' +
-                  (spec.sled ? " checked" : "") + "> Sled &amp; station work</label>" +
-              "</div>" +
-              (proj ? '<div class="shoe-note">' + proj + "</div>" : "") +
-              (typed && t.note ? '<div class="shoe-note">' + t.note + "</div>" : "") +
-              (spec.sled ? '<div class="shoe-note grip">Sled push wears the outsole before the midsole \u2014 check the tread for grip before race day, whatever the mileage says.</div>' : "")
-            ) +
-            "</div>";
-        }).join("") + "</div>" +
-        '<p class="foot-note">Ranges are published guidance, not a rule: how heavy you are and how hard you run move them. ' +
-        "Set <b>Miles before tracking</b> if a pair already had miles on it when you started logging.</p>"
-      : '<p class="empty">No shoes recorded yet \u2014 add them when you log a run.</p>';
+    var list = Object.keys(shoes).map(function (k) { return shoes[k]; }).sort(function (a, b) { return b.miles - a.miles; });
+    var lim = Number(state.shoeLimit) > 0 ? Number(state.shoeLimit) : 400;
+    document.getElementById("shoeTable").innerHTML = list.length ? '<table><thead><tr><th>Shoes</th><th class="num">Runs</th><th class="num">Miles</th><th class="num">Avg pace</th><th>Wear</th><th>Status</th><th class="num">Last worn</th></tr></thead><tbody>' +
+      list.map(function (sh) {
+        var pct = Math.min(100, (sh.miles / lim) * 100);
+        var cls = pct >= 100 ? "crit" : pct >= 75 ? "warn" : "";
+        var label = pct >= 100 ? "Retire" : pct >= 75 ? "Wearing out" : "Good";
+        var col = pct >= 100 ? "var(--critical)" : pct >= 75 ? "var(--warning)" : "var(--good)";
+        return "<tr><td>" + esc(sh.name) + '</td><td class="num">' + sh.runs + '</td><td class="num">' + mi(sh.miles) +
+          '</td><td class="num">' + (sh.timed ? fmtPace(sh.sec, sh.timed) : "—") +
+          '</td><td><span class="meter ' + cls + '"><span style="width:' + pct.toFixed(1) + '%"></span></span></td>' +
+          '<td><span class="status"><span class="dot" style="background:' + col + '"></span>' + label + " " +
+          Math.round(pct) + '%</span></td><td class="num">' + esc(fmtShort(sh.last)) + "</td></tr>";
+      }).join("") + "</tbody></table>" : '<p class="empty">No shoes recorded yet — add them when you log a run.</p>';
 
     var dl = document.getElementById("shoeList");
-    dl.innerHTML = list.filter(function (sh) { return !sh.unspec; })
+    dl.innerHTML = list.filter(function (sh) { return sh.name !== "Unspecified"; })
       .map(function (sh) { return '<option value="' + esc(sh.name) + '">'; }).join("");
 
     // --- run log ---
@@ -1577,21 +1462,6 @@ nav.tabs button.tab[aria-current="page"] {
     if (!r) return;
     if (!confirm("Delete the " + mi(r.miles) + " mi run on " + fmtShort(r.date) + "?")) return;
     state.runs = state.runs.filter(function (x) { return x.id !== id; });
-    save(); render();
-  });
-
-  document.getElementById("shoeTable").addEventListener("change", function (e) {
-    var el = e.target, d = el.dataset || {};
-    var key = d.shoeType !== undefined ? d.shoeType
-            : d.shoeStart !== undefined ? d.shoeStart
-            : d.shoeSled !== undefined ? d.shoeSled : null;
-    if (key === null) return;
-    if (!HP.canEdit()) { render(); return; }
-    if (!state.shoeSpecs) state.shoeSpecs = {};
-    var spec = state.shoeSpecs[key] || (state.shoeSpecs[key] = {});
-    if (d.shoeType !== undefined) spec.type = el.value;
-    else if (d.shoeStart !== undefined) spec.start = Math.max(0, Number(el.value) || 0);
-    else spec.sled = el.checked;
     save(); render();
   });
 
@@ -2145,6 +2015,15 @@ nav.tabs button.tab[aria-current="page"] {
     show(views[HP.state.view] ? HP.state.view : "tracker");
   });
 })();
+</script>
+<script>
+/* Register the service worker so the app opens offline from the home screen.
+   Skipped on file:// where service workers are unavailable. */
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
+}
 </script>
 </body>
 </html>
