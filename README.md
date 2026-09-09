@@ -137,6 +137,31 @@ over the last six weeks.
 These ranges are published guidance, not a rule - weight and running style move
 them.
 
+## Building
+
+`index.html` is the source of truth. `./build.sh [out.html]` stamps a build id
+into `index.html` and `sw.js`, then writes the artifact build - the same file
+with the document wrapper stripped, since the Artifact host supplies its own.
+The build id shows in the app footer, so you can tell at a glance whether a
+device is running the current version.
+
+## Theme
+
+Dark is the app, not a mode: it is the bare `:root` default, so a phone in light
+mode does not turn the app white. Light is still available, but only when
+someone picks it with the Theme control.
+
+## Installing to a home screen
+
+The service worker is network-first for the page itself, so an installed copy
+re-fetches the app whenever it has a connection and falls back to the cache only
+offline. An earlier version answered from cache first, which meant an installed
+copy kept serving whatever build it was installed with.
+
+Note that `sw.js` and `manifest.webmanifest` only apply to a copy served over
+http(s) - they are inert on `file://` and inside the artifact viewer. Serving
+them needs a host (GitHub Pages is not currently enabled on this repo).
+
 ## Two ways to run it
 
 The same `index.html` runs on two backends and picks one at load:

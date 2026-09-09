@@ -4,11 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hyrox Prep</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#161826">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 /* Hyrox Prep — shared design tokens and components (index.html + training.html) */
-/* ---------- tokens ---------- */
+/* ---------- tokens ----------
+   Nocturne is the app's look, not a mode: it is the bare :root default, so the
+   phone being in light mode no longer turns the app white. Light stays
+   available, but only when someone explicitly picks it with the Theme control. */
 :root {
+  color-scheme: dark;
+  --page:            #161826;
+  --surface-1:       #232532;
+  --text-primary:    #e9e9ed;
+  --text-secondary:  #b2b6ca;
+  --muted:           #9397ab;
+  --grid:            #292b31;
+  --axis:            #3f424d;
+  --series-1:        #9184d9;
+  --series-1-wash:   rgba(145,132,217,0.12);
+  --context:         #75798c;
+  --good:            #0ca30c;
+  --warning:         #fab219;
+  --serious:         #ec835a;
+  --critical:        #d03b3b;
+  --success-text:    #7ddb8f;
+  --border:          #3f424d;
+  --ghost:           rgba(233,233,237,0.06);
+  --radius:          8px;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+:root[data-theme="light"] {
   color-scheme: light;
   --page:            #f9f9f7;
   --surface-1:       #fcfcfb;
@@ -20,49 +49,9 @@
   --series-1:        #2a78d6;
   --series-1-wash:   rgba(42,120,214,0.10);
   --context:         #898781;
-  --good:            #0ca30c;
-  --warning:         #fab219;
-  --serious:         #ec835a;
-  --critical:        #d03b3b;
   --success-text:    #006300;
   --border:          rgba(11,11,11,0.10);
   --ghost:           rgba(11,11,11,0.04);
-  --radius:          8px;
-  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --page:           #161826;
-    --surface-1:      #232532;
-    --text-primary:   #e9e9ed;
-    --text-secondary: #b2b6ca;
-    --muted:          #9397ab;
-    --grid:           #292b31;
-    --axis:           #3f424d;
-    --series-1:       #9184d9;
-    --series-1-wash:  rgba(145,132,217,0.12);
-    --context:        #75798c;
-    --success-text:   #7ddb8f;
-    --border:         #3f424d;
-    --ghost:          rgba(233,233,237,0.06);
-  }
-}
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --page:           #161826;
-  --surface-1:      #232532;
-  --text-primary:   #e9e9ed;
-  --text-secondary: #b2b6ca;
-  --muted:          #9397ab;
-  --grid:           #292b31;
-  --axis:           #3f424d;
-  --series-1:       #9184d9;
-  --series-1-wash:  rgba(145,132,217,0.12);
-  --context:        #75798c;
-  --success-text:   #7ddb8f;
-  --border:         #3f424d;
-  --ghost:          rgba(233,233,237,0.06);
 }
 
 /* ---------- base ---------- */
@@ -624,6 +613,7 @@ nav.tabs button.tab[aria-current="page"] {
   </section>
 
   <p class="foot-note" id="storeNote"></p>
+  <p class="foot-note" id="buildStamp" style="opacity:.7;"></p>
   </div>
 
   <div id="viewTeam" class="hidden">
@@ -816,6 +806,7 @@ nav.tabs button.tab[aria-current="page"] {
 (function (global) {
   "use strict";
 
+  var BUILD  = "2026-09-09.2105";          // stamped at publish time
   var KEY    = "hyroxPrep.v2";       // local-mode roster
   var PREFS  = "hyroxPrep.prefs";    // per-viewer, both modes
   var LEGACY = "hyroxPrep.v1";
@@ -1337,7 +1328,8 @@ nav.tabs button.tab[aria-current="page"] {
     else document.documentElement.removeAttribute("data-theme");
   }
   function cycleTheme() {
-    state.theme = state.theme === "dark" ? "light" : state.theme === "light" ? "" : "dark";
+    // two states only: the app is dark, or you asked for light
+    state.theme = state.theme === "light" ? "" : "light";
     applyTheme(); savePrefs();
   }
 
@@ -1355,6 +1347,8 @@ nav.tabs button.tab[aria-current="page"] {
       el.className = cls;
       el.textContent = txt;
     }
+    var v = document.getElementById("buildStamp");
+    if (v) v.textContent = "Build " + BUILD;
     var f = document.getElementById("storeNote");
     if (f) {
       f.innerHTML = mode === "shared"
@@ -1465,7 +1459,7 @@ nav.tabs button.tab[aria-current="page"] {
     onChange: onChange, emit: emit,
     KEY: KEY, DIVISIONS: DIVISIONS, LOADS: LOADS, STATIONS: STATIONS, BENCH: BENCH,
     SHOE_TYPES: SHOE_TYPES, SLED_FACTOR: SLED_FACTOR,
-    RACES: RACES, RACE_SNAPSHOT: RACE_SNAPSHOT, RACE_SOURCE: RACE_SOURCE,
+    RACES: RACES, RACE_SNAPSHOT: RACE_SNAPSHOT, RACE_SOURCE: RACE_SOURCE, BUILD: BUILD,
     init: init, save: save, active: active, status: status,
     owned: owned, claim: claim, canEdit: canEdit, paintStatus: paintStatus,
     summary: summary, teams: teams, targetSplits: targetSplits,
@@ -3078,6 +3072,26 @@ nav.tabs button.tab[aria-current="page"] {
 /* ============ shell: athlete bar, view switching, store startup ============ */
 (function () {
   "use strict";
+
+  /* The service worker only applies to a self-hosted copy served over http(s).
+     Inside the artifact viewer there is nothing to register and nothing to
+     cache, so this is a no-op there. */
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    navigator.serviceWorker.register("sw.js").then(function (reg) {
+      reg.addEventListener("updatefound", function () {
+        var sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener("statechange", function () {
+          // a new build finished installing while the old one was on screen
+          if (sw.state === "installed" && navigator.serviceWorker.controller) {
+            sw.postMessage("skipWaiting");
+            location.reload();
+          }
+        });
+      });
+      reg.update();
+    }).catch(function () {});
+  }
   var views = { tracker: document.getElementById("viewTracker"),
                 training: document.getElementById("viewTraining"),
                 races: document.getElementById("viewRaces"),
