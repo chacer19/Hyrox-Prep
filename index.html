@@ -243,6 +243,13 @@ a.ext:hover { text-decoration: underline; }
   .race-when { grid-column: 1; }
 }
 
+/* inline delete confirmation */
+.del-cell { white-space: nowrap; }
+.del-ask { font-size: 12px; color: var(--text-secondary); margin-right: 8px; }
+tr.asking { background: var(--ghost); }
+button.icon.danger { color: #fff; background: var(--critical); border-color: var(--critical); }
+button.icon.danger:hover { filter: brightness(1.07); }
+
 /* read-only: viewing an athlete that isn't yours */
 .banner.lock { border-left-color: var(--series-1); display: flex; gap: 12px;
   align-items: center; flex-wrap: wrap; }
@@ -364,6 +371,12 @@ nav.tabs button.tab[aria-current="page"] {
   .shoe-spec input[type="number"] { max-width: none; }
 
   .phase-bar { gap: 2px; }
+
+  /* a phone can't reach a Delete button parked behind seven columns */
+  table.run-log th:nth-child(3), table.run-log td:nth-child(3),
+  table.run-log th:nth-child(4), table.run-log td:nth-child(4),
+  table.run-log th:nth-child(6), table.run-log td:nth-child(6) { display: none; }
+  table.run-log th, table.run-log td { padding: 8px 6px; }
   .banner.lock { gap: 8px; }
   .banner.lock button { width: 100%; }
 }
@@ -1532,6 +1545,7 @@ nav.tabs button.tab[aria-current="page"] {
   }
 
   /* =================== tables =================== */
+  var confirmDel = null;   // id of the run showing its inline "Delete?" prompt
   function renderTables(s) {
     // --- cumulative table twin ---
     var rows = [], running = 0;
@@ -1657,12 +1671,20 @@ nav.tabs button.tab[aria-current="page"] {
 
     // --- run log ---
     var runs = state.runs.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id; });
-    document.getElementById("runTable").innerHTML = runs.length ? '<table><thead><tr><th>Date</th><th class="num">Miles</th><th class="num">Time</th><th class="num">Pace /mi</th><th>Shoes</th><th>Notes</th><th></th></tr></thead><tbody>' +
+    document.getElementById("runTable").innerHTML = runs.length ? '<table class="run-log"><thead><tr><th>Date</th><th class="num">Miles</th><th class="num">Time</th><th class="num">Pace /mi</th><th>Shoes</th><th>Notes</th><th></th></tr></thead><tbody>' +
       runs.map(function (r) {
-        return "<tr><td>" + esc(fmtShort(r.date)) + '</td><td class="num">' + mi(r.miles) +
+        var asking = r.id === confirmDel;
+        return "<tr" + (asking ? ' class="asking"' : "") + "><td>" + esc(fmtShort(r.date)) +
+          '</td><td class="num">' + mi(r.miles) +
           '</td><td class="num">' + fmtDur(r.seconds) + '</td><td class="num">' + fmtPace(r.seconds, r.miles) +
-          "</td><td>" + esc(r.shoes || "—") + "</td><td>" + esc(r.notes || "") +
-          '</td><td class="num"><button class="icon" data-del="' + r.id + '" aria-label="Delete run">Delete</button></td></tr>';
+          "</td><td>" + esc(r.shoes || "\u2014") + "</td><td>" + esc(r.notes || "") +
+          '</td><td class="num del-cell">' +
+          (asking
+            ? '<span class="del-ask">Delete?</span>' +
+              '<button class="icon danger" data-yes="' + r.id + '">Yes</button>' +
+              '<button class="icon" data-no="1">Cancel</button>'
+            : '<button class="icon" data-del="' + r.id + '" aria-label="Delete this run">Delete</button>') +
+          "</td></tr>";
       }).join("") + "</tbody></table>" : '<p class="empty">No runs logged yet. Add your first one above.</p>';
 
     document.getElementById("logCount").textContent = runs.length
@@ -1769,13 +1791,16 @@ nav.tabs button.tab[aria-current="page"] {
   });
 
   document.getElementById("runTable").addEventListener("click", function (e) {
-    var btn = e.target.closest("button[data-del]"); if (!btn) return;
+    var ask = e.target.closest("button[data-del]");
+    var yes = e.target.closest("button[data-yes]");
+    var no  = e.target.closest("button[data-no]");
+    if (!ask && !yes && !no) return;
     if (!HP.canEdit()) return;
-    var id = Number(btn.dataset.del);
-    var r = state.runs.filter(function (x) { return x.id === id; })[0];
-    if (!r) return;
-    if (!confirm("Delete the " + mi(r.miles) + " mi run on " + fmtShort(r.date) + "?")) return;
+    if (no)  { confirmDel = null; render(); return; }
+    if (ask) { confirmDel = Number(ask.dataset.del); render(); return; }
+    var id = Number(yes.dataset.yes);
     state.runs = state.runs.filter(function (x) { return x.id !== id; });
+    confirmDel = null;
     save(); render();
   });
 
@@ -1858,7 +1883,7 @@ nav.tabs button.tab[aria-current="page"] {
             (HP.status().mode === "shared" ? " They'll be added to the shared roster everyone sees." : ""))) return;
         HP.replaceAll(incoming);
         reseat(); fill(); HP.emit();
-      } catch (err) { alert("That doesn't look like a Hyrox Prep export."); }
+      } catch (err) { document.getElementById("formHint").textContent = "That file isn't a Hyrox Prep export."; }
       e.target.value = "";
     };
     fr.readAsText(f);
