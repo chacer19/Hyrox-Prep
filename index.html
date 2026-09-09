@@ -188,6 +188,14 @@ tbody tr:hover { background: var(--ghost); }
 .profile-pick { min-width: 220px; }
 .profile-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
 .profile-warn { font-size: 13px; color: var(--text-secondary); align-self: center; }
+.conn {
+  font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted); border: 1px solid var(--border); border-radius: 20px;
+  padding: 3px 9px; align-self: center; white-space: nowrap;
+}
+.conn.live { color: var(--success-text); border-color: currentColor; }
+.conn.warn { color: var(--critical); border-color: currentColor; text-transform: none;
+  letter-spacing: 0; font-weight: 550; white-space: normal; }
 button.danger { background: var(--critical); border-color: var(--critical); color: #fff; }
 button.danger:hover { filter: brightness(1.07); }
 nav.tabs { display: flex; gap: 4px; }
@@ -533,20 +541,20 @@ nav.tabs button.tab[aria-current="page"] {
 </div>
 
 <script>
-/* Hyrox Prep — shared store, athlete profiles, division standards and helpers.
-   Loaded by index.html (mile tracker) and training.html (training plan).
-   Both pages read and write the same localStorage key, so switching athlete
-   in one page switches it in the other. */
+/* Hyrox Prep — store, athlete roster, division standards and helpers.
+   Runs on two backends, chosen at load:
+     - shared : the artifact's database, when published (all viewers, all devices)
+     - local  : localStorage, when the file is opened directly
+   One document per athlete, so six people logging at the same time never
+   write the same record. Which athlete YOU have selected, and your theme,
+   are per-viewer and always stay local. */
 (function (global) {
   "use strict";
 
-  var KEY = "hyroxPrep.v2";
+  var KEY    = "hyroxPrep.v2";       // local-mode roster
+  var PREFS  = "hyroxPrep.prefs";    // per-viewer, both modes
   var LEGACY = "hyroxPrep.v1";
 
-  /* ============ division standards ============
-     Sourced from published HYROX station standards. Doubles is NOT halved —
-     it uses the same per-station load as singles of the matching gender, and
-     mixed doubles uses the men's loads throughout. */
   var DIVISIONS = {
     "open-men": {
       label: "Open — Men", short: "Open M", loadKey: "men-open",
@@ -648,57 +656,197 @@ nav.tabs button.tab[aria-current="page"] {
     return Math.floor(p / 60) + ":" + pad(Math.round(p % 60));
   }
 
-  /* ============ store ============ */
-  function blankProfile(name) {
+  /* ============ helpers ============ */
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function toISO(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parseISO(s) { var p = String(s).split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function todayISO() { return toISO(new Date()); }
+  function addDays(iso, n) { var d = parseISO(iso); d.setDate(d.getDate() + n); return toISO(d); }
+  function dayDiff(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+  function fmtShort(iso) { return parseISO(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
+  function fmtLong(iso) { return parseISO(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" }); }
+  function mi(n) { return (Math.round(n * 100) / 100).toFixed(2); }
+  function signed(n) { return (n >= 0 ? "+" : "\u2212") + mi(Math.abs(n)); }
+  function trimNum(n) { return mi(n).replace(/\.?0+$/, ""); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function parseTime(str) {
+    if (!str) return null;
+    var parts = String(str).trim().split(":").map(Number);
+    if (parts.some(function (n) { return !isFinite(n) || n < 0; })) return null;
+    if (parts.length === 1) return Math.round(parts[0] * 60);
+    if (parts.length === 2) return Math.round(parts[0] * 60 + parts[1]);
+    if (parts.length === 3) return Math.round(parts[0] * 3600 + parts[1] * 60 + parts[2]);
+    return null;
+  }
+  function fmtDur(sec) {
+    if (sec == null) return "\u2014";
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.round(sec % 60);
+    return h > 0 ? h + ":" + pad(m) + ":" + pad(s) : m + ":" + pad(s);
+  }
+  function fmtPace(sec, miles) {
+    if (sec == null || !miles) return "\u2014";
+    var p = sec / miles;
+    if (!isFinite(p) || p <= 0) return "\u2014";
+    return Math.floor(p / 60) + ":" + pad(Math.round(p % 60));
+  }
+
+  /* ============ shape ============ */
+  function newId() { return "a" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36); }
+  function blankProfile(name, id) {
     return {
-      id: "p" + Date.now() + Math.floor(Math.random() * 1000),
-      name: name || "Athlete",
-      division: "open-men",
-      raceName: "", raceDate: "", planStart: "",
-      dailyGoal: 1, shoeLimit: 400,
+      id: id || newId(), name: name || "Athlete", division: "open-men",
+      raceName: "", raceDate: "", planStart: "", dailyGoal: 1, shoeLimit: 400,
+      daysPerWeek: 5, runBase: "low", ttDist: 0, ttSec: null,
       runs: [], done: {}
     };
   }
+  function normalize(id, v) {
+    var p = blankProfile(v && v.name, id);
+    if (v) Object.keys(p).forEach(function (k) { if (v[k] !== undefined && k !== "id") p[k] = v[k]; });
+    if (!Array.isArray(p.runs)) p.runs = [];
+    if (!p.done || typeof p.done !== "object") p.done = {};
+    if (!DIVISIONS[p.division]) p.division = "open-men";
+    return p;
+  }
+  // what actually goes in a document — never the client-side id
+  function body(p) {
+    var o = {};
+    Object.keys(p).forEach(function (k) { if (k !== "id") o[k] = p[k]; });
+    return o;
+  }
 
-  var state = null;
+  var PLACEHOLDER = blankProfile("\u2014", "");
+  var state = { profiles: {}, activeProfile: "", theme: "", view: "tracker" };
+  var mode = "local", db = null, ready = false, lastError = "";
 
-  function load() {
+  /* ============ per-viewer preferences (never shared) ============ */
+  function loadPrefs() {
+    try {
+      var r = JSON.parse(localStorage.getItem(PREFS) || "{}");
+      state.activeProfile = r.activeProfile || "";
+      state.theme = r.theme || "";
+      state.view = r.view || "tracker";
+    } catch (e) {}
+  }
+  function savePrefs() {
+    try {
+      localStorage.setItem(PREFS, JSON.stringify({
+        activeProfile: state.activeProfile, theme: state.theme, view: state.view
+      }));
+    } catch (e) {}
+  }
+
+  /* ============ local backend ============ */
+  function loadLocal() {
     var s = null;
     try { var raw = localStorage.getItem(KEY); if (raw) s = JSON.parse(raw); } catch (e) {}
-    if (!s || !s.profiles) {
-      s = { version: 2, theme: "", activeProfile: "", profiles: {} };
-      // fold a v1 single-athlete log into the first profile
+    if (s && s.profiles) {
+      Object.keys(s.profiles).forEach(function (id) { state.profiles[id] = normalize(id, s.profiles[id]); });
+      if (!state.activeProfile && s.activeProfile) state.activeProfile = s.activeProfile;
+    } else {
       var old = null;
       try { var r1 = localStorage.getItem(LEGACY); if (r1) old = JSON.parse(r1); } catch (e) {}
       var p = blankProfile(old ? "Athlete 1" : "Me");
-      if (old) {
-        p.raceName = old.raceName || ""; p.raceDate = old.raceDate || "";
-        p.planStart = old.planStart || ""; p.dailyGoal = old.dailyGoal || 1;
-        p.shoeLimit = old.shoeLimit || 400;
-        p.runs = Array.isArray(old.runs) ? old.runs : [];
-        s.theme = old.theme || "";
-      }
-      s.profiles[p.id] = p; s.activeProfile = p.id;
+      if (old) { Object.keys(p).forEach(function (k) { if (old[k] !== undefined && k !== "id") p[k] = old[k]; }); }
+      state.profiles[p.id] = normalize(p.id, p);
+      state.activeProfile = p.id;
     }
-    // repair
-    if (!s.profiles || !Object.keys(s.profiles).length) {
-      var np = blankProfile("Me"); s.profiles = {}; s.profiles[np.id] = np; s.activeProfile = np.id;
-    }
-    if (!s.profiles[s.activeProfile]) s.activeProfile = Object.keys(s.profiles)[0];
-    Object.keys(s.profiles).forEach(function (id) {
-      var p = s.profiles[id];
-      if (!Array.isArray(p.runs)) p.runs = [];
-      if (!p.done || typeof p.done !== "object") p.done = {};
-      if (!DIVISIONS[p.division]) p.division = "open-men";
+    if (!state.profiles[state.activeProfile]) state.activeProfile = Object.keys(state.profiles)[0] || "";
+    ready = true;
+  }
+  function saveLocal() {
+    try { localStorage.setItem(KEY, JSON.stringify({ version: 2, profiles: state.profiles })); }
+    catch (e) { lastError = "Could not save to this browser."; }
+  }
+
+  /* ============ shared backend ============ */
+  var pending = null;
+  function saveShared() {
+    var p = active(); if (!p || !p.id || !db) return;
+    clearTimeout(pending);                       // batch rapid edits into one write
+    pending = setTimeout(function () {
+      db.doc("athletes/" + p.id).set(body(p)).catch(function (e) {
+        lastError = e && e.code === "quota_exceeded"
+          ? "The shared store is full \u2014 delete some old runs."
+          : "Couldn't save to the shared store. Your change is still on screen; try again.";
+        emit();
+      });
+    }, 180);
+  }
+
+  function connect(done) {
+    var use = (global.claude && global.claude.use) ? global.claude.use("db") : null;
+    if (!use) { loadLocal(); done(); return; }
+    var settled = false;
+    use.then(function (d) {
+      if (!d) { loadLocal(); settled = true; done(); return; }
+      db = d; mode = "shared";
+      d.collection("athletes").onSnapshot(function (snap) {
+        var next = {};
+        snap.docs.forEach(function (doc) { next[doc.id] = normalize(doc.id, doc.data()); });
+        state.profiles = next;
+        if (!state.profiles[state.activeProfile]) {
+          state.activeProfile = Object.keys(next)[0] || "";
+          savePrefs();
+        }
+        ready = true; lastError = "";
+        if (!settled) { settled = true; done(); }
+        emit();
+      }, function (e) {
+        lastError = e && e.code === "revoked"
+          ? "Your access to the shared store was removed."
+          : "Lost the connection to the shared store.";
+        ready = true;
+        if (!settled) { settled = true; done(); }
+        emit();
+      });
+    }).catch(function () { loadLocal(); if (!settled) { settled = true; done(); } });
+  }
+
+  /* ============ public store ============ */
+  function active() { return state.profiles[state.activeProfile] || PLACEHOLDER; }
+  function save() { savePrefs(); if (mode === "shared") saveShared(); else saveLocal(); }
+
+  function addAthlete(name) {
+    var p = blankProfile(name);
+    state.profiles[p.id] = p;
+    state.activeProfile = p.id;
+    savePrefs();
+    if (mode === "shared" && db) {
+      db.doc("athletes/" + p.id).set(body(p)).catch(function () {
+        lastError = "Couldn't create that athlete in the shared store.";
+        emit();
+      });
+    } else saveLocal();
+    return p;
+  }
+  function removeAthlete(id) {
+    delete state.profiles[id];
+    if (state.activeProfile === id) state.activeProfile = Object.keys(state.profiles)[0] || "";
+    savePrefs();
+    if (mode === "shared" && db) db.doc("athletes/" + id).delete().catch(function () {});
+    else saveLocal();
+  }
+  function replaceAll(profiles) {          // used by Import
+    Object.keys(profiles).forEach(function (id) {
+      var p = normalize(id, profiles[id]);
+      state.profiles[id] = p;
+      if (mode === "shared" && db) db.doc("athletes/" + id).set(body(p)).catch(function () {});
     });
-    state = s;
-    return s;
+    if (mode !== "shared") saveLocal();
+    if (!state.profiles[state.activeProfile]) state.activeProfile = Object.keys(state.profiles)[0] || "";
+    savePrefs();
   }
-  function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); }
-    catch (e) { console.warn("Hyrox Prep could not save:", e); }
+
+  function init(done) { loadPrefs(); connect(done || function () {}); }
+  function status() {
+    var n = Object.keys(state.profiles).length;
+    return { mode: mode, ready: ready, count: n, error: lastError };
   }
-  function active() { return state.profiles[state.activeProfile]; }
 
   /* ============ theme ============ */
   function applyTheme() {
@@ -707,26 +855,35 @@ nav.tabs button.tab[aria-current="page"] {
   }
   function cycleTheme() {
     state.theme = state.theme === "dark" ? "light" : state.theme === "light" ? "" : "dark";
-    applyTheme(); save();
+    applyTheme(); savePrefs();
   }
 
-  /* ============ profile bar ============ */
+  var subs = [];
+  function onChange(fn) { subs.push(fn); }
+  function emit() { subs.forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); }
+
+  /* ============ athlete bar ============ */
   function mountProfileBar(el, notify) {
-    var mode = "idle";   // idle | add | rename | remove
+    var mode2 = "idle";
 
     function paint() {
       var ids = Object.keys(state.profiles), cur = active(), html;
+      var st = status();
 
-      if (mode === "add" || mode === "rename") {
-        html = '<label class="field profile-pick">' + (mode === "add" ? "New athlete" : "Rename athlete") +
+      if (!ids.length && mode2 === "idle") mode2 = "add";
+
+      if (mode2 === "add" || mode2 === "rename") {
+        html = '<label class="field profile-pick">' + (mode2 === "add" ? "Athlete name" : "Rename athlete") +
           '<input type="text" id="hpName" autocomplete="off" placeholder="Name" value="' +
-          esc(mode === "rename" ? cur.name : "") + '"></label>' +
+          esc(mode2 === "rename" ? cur.name : "") + '"></label>' +
           '<div class="profile-actions">' +
           '<button type="button" id="hpSave" class="primary">Save</button>' +
-          '<button type="button" id="hpCancel" class="ghost">Cancel</button></div>';
-      } else if (mode === "remove") {
+          (ids.length ? '<button type="button" id="hpCancel" class="ghost">Cancel</button>' : "") +
+          "</div>";
+      } else if (mode2 === "remove") {
         html = '<div class="profile-warn">Remove <b>' + esc(cur.name) +
-          "</b> and everything logged for them? This can't be undone.</div>" +
+          "</b> and everything logged for them? This can't be undone" +
+          (st.mode === "shared" ? ", and it removes them for everyone." : ".") + "</div>" +
           '<div class="profile-actions">' +
           '<button type="button" id="hpYes" class="danger">Remove</button>' +
           '<button type="button" id="hpCancel" class="ghost">Cancel</button></div>';
@@ -743,53 +900,55 @@ nav.tabs button.tab[aria-current="page"] {
           (ids.length > 1 ? '<button type="button" id="hpDel" class="ghost">Remove</button>' : "") +
           "</div>";
       }
-      el.innerHTML = html;
+
+      var badge = st.error
+        ? '<span class="conn warn" title="' + esc(st.error) + '">' + esc(st.error) + "</span>"
+        : st.mode === "shared"
+          ? '<span class="conn live">Shared \u00b7 ' + st.count + " athlete" + (st.count === 1 ? "" : "s") + "</span>"
+          : '<span class="conn">This browser only</span>';
+
+      el.innerHTML = html + badge;
       var $ = function (id) { return el.querySelector("#" + id); };
 
-      if (mode === "idle") {
+      if (mode2 === "idle") {
         $("hpProfile").addEventListener("change", function (e) {
-          state.activeProfile = e.target.value; save(); paint(); notify();
+          state.activeProfile = e.target.value; savePrefs(); paint(); notify();
         });
-        $("hpAdd").addEventListener("click", function () { mode = "add"; paint(); focusName(); });
-        $("hpRename").addEventListener("click", function () { mode = "rename"; paint(); focusName(); });
-        if ($("hpDel")) $("hpDel").addEventListener("click", function () { mode = "remove"; paint(); });
-      } else if (mode === "remove") {
+        $("hpAdd").addEventListener("click", function () { mode2 = "add"; paint(); focusName(); });
+        $("hpRename").addEventListener("click", function () { mode2 = "rename"; paint(); focusName(); });
+        if ($("hpDel")) $("hpDel").addEventListener("click", function () { mode2 = "remove"; paint(); });
+      } else if (mode2 === "remove") {
         $("hpYes").addEventListener("click", function () {
-          delete state.profiles[state.activeProfile];
-          state.activeProfile = Object.keys(state.profiles)[0];
-          mode = "idle"; save(); paint(); notify();
+          removeAthlete(state.activeProfile); mode2 = "idle"; paint(); notify();
         });
-        $("hpCancel").addEventListener("click", function () { mode = "idle"; paint(); });
+        $("hpCancel").addEventListener("click", function () { mode2 = "idle"; paint(); });
       } else {
         var commit = function () {
           var name = $("hpName").value.trim();
           if (!name) { $("hpName").focus(); return; }
-          if (mode === "add") {
-            var np = blankProfile(name);
-            state.profiles[np.id] = np; state.activeProfile = np.id;
-          } else { cur.name = name; }
-          mode = "idle"; save(); paint(); notify();
+          if (mode2 === "add") addAthlete(name);
+          else { cur.name = name; save(); }
+          mode2 = "idle"; paint(); notify();
         };
         $("hpSave").addEventListener("click", commit);
-        $("hpCancel").addEventListener("click", function () { mode = "idle"; paint(); });
+        if ($("hpCancel")) $("hpCancel").addEventListener("click", function () { mode2 = "idle"; paint(); });
         $("hpName").addEventListener("keydown", function (e) {
           if (e.key === "Enter") { e.preventDefault(); commit(); }
-          else if (e.key === "Escape") { mode = "idle"; paint(); }
+          else if (e.key === "Escape" && ids.length) { mode2 = "idle"; paint(); }
         });
       }
     }
     function focusName() { var i = el.querySelector("#hpName"); if (i) { i.focus(); i.select(); } }
+    onChange(paint);
     paint();
   }
-
-  var subs = [];
-  function onChange(fn) { subs.push(fn); }
-  function emit() { subs.forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); }
 
   global.HP = {
     onChange: onChange, emit: emit,
     KEY: KEY, DIVISIONS: DIVISIONS, LOADS: LOADS, STATIONS: STATIONS, BENCH: BENCH,
-    load: load, save: save, active: active, blankProfile: blankProfile,
+    init: init, save: save, active: active, status: status,
+    blankProfile: blankProfile, addAthlete: addAthlete, removeAthlete: removeAthlete,
+    replaceAll: replaceAll, savePrefs: savePrefs,
     applyTheme: applyTheme, cycleTheme: cycleTheme, mountProfileBar: mountProfileBar,
     get state() { return state; },
     pad: pad, toISO: toISO, parseISO: parseISO, todayISO: todayISO, addDays: addDays,
@@ -804,8 +963,6 @@ nav.tabs button.tab[aria-current="page"] {
   "use strict";
 
   /* ============ state — the shared store lives in shared.js ============ */
-  HP.load();
-  HP.applyTheme();
   var state = HP.active();              // `state` is the ACTIVE ATHLETE's record
   function reseat() { state = HP.active(); }
   function save() { HP.save(); }
@@ -1270,13 +1427,37 @@ nav.tabs button.tab[aria-current="page"] {
     HP.cycleTheme(); HP.emit();
   });
 
-  document.getElementById("btnExport").addEventListener("click", function () {
-    var blob = new Blob([JSON.stringify(HP.state, null, 2)], { type: "application/json" });
+  /* Export: a viewer can't take a blob link, so route through the downloads
+     capability when the page runs as an artifact, and fall back to a plain
+     anchor when the file is opened directly. */
+  var inViewer = !!(window.claude && window.claude.use);
+  function anchorSave(json, filename) {
+    var blob = new Blob([json], { type: "application/json" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "hyrox-prep-" + todayISO() + ".json";
+    a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  if (inViewer) {
+    window.claude.use("downloads").then(function (dl) {
+      if (!dl) document.getElementById("btnExport").classList.add("hidden");
+    }).catch(function () {});
+  }
+  document.getElementById("btnExport").addEventListener("click", function () {
+    var json = JSON.stringify(HP.state, null, 2);
+    var filename = "hyrox-prep-" + todayISO() + ".json";
+    var hint = document.getElementById("formHint");
+    if (!inViewer) { anchorSave(json, filename); return; }
+    window.claude.use("downloads").then(function (dl) {
+      if (!dl) { document.getElementById("btnExport").classList.add("hidden"); return; }
+      return dl.save({ filename: filename, data: json }).catch(function (e) {
+        if (!e || e.code === "declined") return;          // viewer said no; not an error
+        hint.textContent = e.code === "rate_limited"
+          ? "A save is already open \u2014 finish that one first."
+          : "Couldn't save the export file.";
+      });
+    }).catch(function () {});
   });
   document.getElementById("btnImport").addEventListener("click", function () { document.getElementById("fileImport").click(); });
   document.getElementById("fileImport").addEventListener("change", function (e) {
@@ -1285,20 +1466,19 @@ nav.tabs button.tab[aria-current="page"] {
     fr.onload = function () {
       try {
         var data = JSON.parse(fr.result);
-        if (data && data.profiles) {                       // v2 export: whole roster
-          var n = Object.keys(data.profiles).length;
-          if (!confirm("Replace everything with " + n + " athlete" + (n === 1 ? "" : "s") + " from this file?")) return;
-          localStorage.setItem(HP.KEY, JSON.stringify(data));
-        } else if (data && Array.isArray(data.runs)) {     // older single-athlete export
-          if (!confirm("Import " + data.runs.length + " runs into the current athlete?")) return;
-          var p = HP.active();
-          ["raceName", "raceDate", "planStart", "dailyGoal", "shoeLimit"].forEach(function (k) {
-            if (data[k] !== undefined) p[k] = data[k];
-          });
-          p.runs = data.runs;
-          HP.save();
-        } else throw new Error("unrecognised");
-        HP.load(); reseat(); HP.applyTheme(); window.hpMountBar(); HP.emit();
+        var incoming = null;
+        if (data && data.profiles) incoming = data.profiles;
+        else if (data && Array.isArray(data.runs)) {              // older single-athlete export
+          var one = HP.blankProfile(data.name || "Imported");
+          Object.keys(one).forEach(function (k) { if (data[k] !== undefined && k !== "id") one[k] = data[k]; });
+          incoming = {}; incoming[one.id] = one;
+        }
+        if (!incoming) throw new Error("unrecognised");
+        var n = Object.keys(incoming).length;
+        if (!confirm("Import " + n + " athlete" + (n === 1 ? "" : "s") + " from this file?" +
+            (HP.status().mode === "shared" ? " They'll be added to the shared roster everyone sees." : ""))) return;
+        HP.replaceAll(incoming);
+        reseat(); fill(); HP.emit();
       } catch (err) { alert("That doesn't look like a Hyrox Prep export."); }
       e.target.value = "";
     };
@@ -1326,7 +1506,6 @@ nav.tabs button.tab[aria-current="page"] {
 <script>
 (function () {
   "use strict";
-  HP.load(); HP.applyTheme();
   var P = HP.active();
   function reseat() { P = HP.active(); }
 
@@ -1726,13 +1905,9 @@ nav.tabs button.tab[aria-current="page"] {
 </script>
 
 <script>
-/* ============ shell: athlete bar + view switching ============ */
+/* ============ shell: athlete bar, view switching, store startup ============ */
 (function () {
   "use strict";
-  var bar = document.getElementById("profileBar");
-  window.hpMountBar = function () { HP.mountProfileBar(bar, HP.emit); };
-  window.hpMountBar();
-
   var views = { tracker: document.getElementById("viewTracker"),
                 training: document.getElementById("viewTraining") };
   var tabs = document.querySelectorAll("button.tab");
@@ -1743,15 +1918,18 @@ nav.tabs button.tab[aria-current="page"] {
       if (b.dataset.view === v) b.setAttribute("aria-current", "page");
       else b.removeAttribute("aria-current");
     });
-    try { localStorage.setItem("hyroxPrep.view", v); } catch (e) {}
+    HP.state.view = v; HP.savePrefs();
     HP.emit();   // charts need a real container width once their view is visible
   }
   Array.prototype.forEach.call(tabs, function (b) {
     b.addEventListener("click", function () { show(b.dataset.view); });
   });
-  var start = "tracker";
-  try { start = localStorage.getItem("hyroxPrep.view") || "tracker"; } catch (e) {}
-  show(views[start] ? start : "tracker");
+
+  HP.init(function () {
+    HP.applyTheme();
+    HP.mountProfileBar(document.getElementById("profileBar"), HP.emit);
+    show(views[HP.state.view] ? HP.state.view : "tracker");
+  });
 })();
 </script>
 </body>

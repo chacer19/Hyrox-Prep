@@ -41,10 +41,27 @@ lays itself out backwards from race day.
 The plan's structure, and the reasoning behind each choice, is documented at the
 bottom of the training view along with its sources.
 
-## Data
+## Two ways to run it
 
-Everything is stored in your browser's `localStorage`, so it stays on the device
-you logged it on. **Export JSON** / **Import** moves the whole roster between
-devices. The OneDrive copy of this file syncs the app, not the data.
+The same `index.html` runs on two backends and picks one at load:
+
+| | Shared (published artifact) | Local (open the file) |
+|---|---|---|
+| Storage | the artifact's database | this browser's `localStorage` |
+| Who sees it | everyone with the link, any device | just that browser |
+| Badge | green "Shared - N athletes" | "This browser only" |
+
+**Shared** is the one to use with more than one person. Each athlete is a single
+document (`athletes/<id>`), so several people logging at once never write the
+same record. Which athlete *you* have selected, and your light/dark preference,
+are per-viewer and always stay local - your teammate switching athletes doesn't
+move yours.
+
+Publishing: strip the `<!doctype>/<html>/<head>/<body>` wrapper from this file
+and publish the remainder as an artifact with the `db` and `downloads`
+capabilities. This file stays the source of truth; the artifact is generated
+from it.
+
+**Export JSON** / **Import** moves a roster between the two.
 
 General training guidance — not medical or coaching advice.
