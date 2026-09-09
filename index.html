@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyrox Prep — Daily Mile Tracker</title>
+<style>
+/* ---------- tokens ---------- */
+:root {
+  color-scheme: light;
+  --page:            #f9f9f7;
+  --surface-1:       #fcfcfb;
+  --text-primary:    #0b0b0b;
+  --text-secondary:  #52514e;
+  --muted:           #898781;
+  --grid:            #e1e0d9;
+  --axis:            #c3c2b7;
+  --series-1:        #2a78d6;
+  --series-1-wash:   rgba(42,120,214,0.10);
+  --context:         #898781;
+  --good:            #0ca30c;
+  --warning:         #fab219;
+  --critical:        #d03b3b;
+  --success-text:    #006300;
+  --border:          rgba(11,11,11,0.10);
+  --ghost:           rgba(11,11,11,0.04);
+  --radius:          10px;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page:           #0d0d0d;
+    --surface-1:      #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --muted:          #898781;
+    --grid:           #2c2c2a;
+    --axis:           #383835;
+    --series-1:       #3987e5;
+    --series-1-wash:  rgba(57,135,229,0.12);
+    --context:        #898781;
+    --success-text:   #0ca30c;
+    --border:         rgba(255,255,255,0.10);
+    --ghost:          rgba(255,255,255,0.05);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page:           #0d0d0d;
+  --surface-1:      #1a1a19;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --muted:          #898781;
+  --grid:           #2c2c2a;
+  --axis:           #383835;
+  --series-1:       #3987e5;
+  --series-1-wash:  rgba(57,135,229,0.12);
+  --context:        #898781;
+  --success-text:   #0ca30c;
+  --border:         rgba(255,255,255,0.10);
+  --ghost:          rgba(255,255,255,0.05);
+}
+
+/* ---------- base ---------- */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--page);
+  color: var(--text-primary);
+  font: 14px/1.5 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: 24px 20px 72px; }
+
+h1 { font-size: 20px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 14px; font-weight: 650; margin: 0 0 2px; letter-spacing: -0.005em; }
+.sub { color: var(--text-secondary); font-size: 12.5px; margin: 0; }
+
+header.top {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.brand .tag {
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); font-weight: 600;
+}
+
+/* ---------- cards ---------- */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+
+/* ---------- controls ---------- */
+label.field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--text-secondary); font-weight: 550; }
+input, select, textarea, button { font: inherit; font-family: var(--sans); color: inherit; }
+input[type="date"], input[type="text"], input[type="number"], select, textarea {
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 9px;
+  color: var(--text-primary);
+  width: 100%;
+  min-width: 0;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 1px;
+}
+button {
+  background: var(--page); border: 1px solid var(--border);
+  border-radius: 7px; padding: 7px 12px; cursor: pointer; font-weight: 550;
+}
+button:hover { background: var(--ghost); }
+button.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+button.primary:hover { filter: brightness(1.07); }
+button.ghost { background: transparent; }
+button.icon { padding: 4px 8px; font-size: 12px; color: var(--text-secondary); }
+.row { display: grid; gap: 12px; }
+.setup-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.log-grid   { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); align-items: end; }
+
+/* ---------- hero + stat tiles ---------- */
+.hero-wrap { display: grid; grid-template-columns: minmax(230px, 1fr) 2fr; gap: 16px; align-items: stretch; }
+@media (max-width: 760px) { .hero-wrap { grid-template-columns: 1fr; } }
+
+.hero { display: flex; flex-direction: column; justify-content: center; }
+.hero .figure { font-size: 60px; font-weight: 680; line-height: 1; letter-spacing: -0.03em; }
+.hero .figure.small { font-size: 34px; }
+.hero .figure-label { color: var(--text-secondary); font-size: 13px; margin-top: 8px; }
+.hero .race-name { color: var(--muted); font-size: 12px; margin-top: 3px; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 10px; align-content: start; }
+.kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.kpi .k-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 550; }
+.kpi .k-value { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 3px; }
+.kpi .k-note  { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.pos { color: var(--success-text); }
+.neg { color: var(--critical); }
+
+/* ---------- charts ---------- */
+.chart-box { position: relative; }
+svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; font-size: 12px; color: var(--text-secondary); }
+.legend .item { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 11px; height: 3px; border-radius: 2px; display: inline-block; }
+.tooltip {
+  position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s;
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 7px; padding: 8px 10px; font-size: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.13); z-index: 5; min-width: 128px;
+}
+.tooltip .tt-title { font-weight: 620; margin-bottom: 4px; }
+.tooltip .tt-row { display: flex; justify-content: space-between; gap: 14px; color: var(--text-secondary); }
+.tooltip .tt-row b { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ---------- tables ---------- */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.045em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: var(--ghost); }
+.table-scroll { overflow-x: auto; }
+.empty { color: var(--muted); padding: 26px 4px; text-align: center; font-size: 13px; }
+
+/* meter */
+.meter { display: block; width: 100%; max-width: 150px; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.meter > span { display: block; height: 100%; border-radius: 3px; background: var(--series-1); }
+.meter.warn > span { background: var(--warning); }
+.meter.crit > span { background: var(--critical); }
+
+.status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 550; white-space: nowrap; }
+.status .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.foot-note { color: var(--muted); font-size: 11.5px; margin-top: 10px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.hidden { display: none !important; }
+.banner {
+  border: 1px solid var(--border); border-left: 3px solid var(--warning);
+  background: var(--surface-1); border-radius: 7px; padding: 11px 13px;
+  font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <h1>Hyrox Prep</h1>
+      <span class="tag">Daily Mile Tracker</span>
+    </div>
+    <div class="actions">
+      <button id="btnExport" class="ghost">Export JSON</button>
+      <button id="btnImport" class="ghost">Import</button>
+      <input type="file" id="fileImport" accept="application/json" class="hidden">
+      <button id="btnTheme" class="ghost" aria-label="Toggle colour theme">Theme</button>
+    </div>
+  </header>
+
+  <div id="setupBanner" class="banner hidden">
+    Set your race date below to start the countdown.
+  </div>
+
+  <!-- ===== race setup ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Race &amp; goal</h2>
+        <p class="sub">Everything else is measured against these.</p>
+      </div>
+    </div>
+    <div class="row setup-grid">
+      <label class="field">Race name
+        <input type="text" id="raceName" placeholder="e.g. Hyrox Dallas">
+      </label>
+      <label class="field">Race date
+        <input type="date" id="raceDate">
+      </label>
+      <label class="field">Plan start
+        <input type="date" id="planStart">
+      </label>
+      <label class="field">Daily minimum (mi)
+        <input type="number" id="dailyGoal" min="0.1" step="0.1" value="1">
+      </label>
+      <label class="field">Retire shoes at (mi)
+        <input type="number" id="shoeLimit" min="50" step="10" value="400">
+      </label>
+    </div>
+  </section>
+
+  <!-- ===== countdown + KPIs ===== -->
+  <section class="hero-wrap" style="margin-bottom:16px;">
+    <div class="card hero">
+      <div class="figure" id="heroDays">—</div>
+      <div class="figure-label" id="heroLabel">days until race day</div>
+      <div class="race-name" id="heroRace"></div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <!-- ===== log a run ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Log a run</h2>
+        <p class="sub">Leave time blank if you didn't clock it — pace is worked out from distance and time.</p>
+      </div>
+    </div>
+    <form id="logForm">
+      <div class="row log-grid">
+        <label class="field">Date
+          <input type="date" id="fDate" required>
+        </label>
+        <label class="field">Distance (mi)
+          <input type="number" id="fMiles" min="0.01" step="0.01" placeholder="1.00" required>
+        </label>
+        <label class="field">Time (mm:ss)
+          <input type="text" id="fTime" placeholder="9:45" inputmode="numeric" pattern="^\s*\d{1,2}(:\d{1,2}){0,2}\s*$">
+        </label>
+        <label class="field">Shoes
+          <input type="text" id="fShoes" list="shoeList" placeholder="e.g. Endorphin Speed 4">
+          <datalist id="shoeList"></datalist>
+        </label>
+        <label class="field">Notes
+          <input type="text" id="fNotes" placeholder="optional">
+        </label>
+        <button type="submit" class="primary" style="height:34px;">Add run</button>
+      </div>
+    </form>
+    <p class="foot-note" id="formHint"></p>
+  </section>
+
+  <!-- ===== cumulative chart ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Miles banked vs. required</h2>
+        <p class="sub">Your running total against the flat <span id="goalEcho">1 mi</span>/day line. Above the grey line means miles in the bank.</p>
+      </div>
+      <button class="icon" data-toggle="tblCum">Table view</button>
+    </div>
+    <div class="legend">
+      <span class="item"><i class="swatch" style="background:var(--series-1)"></i> Miles logged</span>
+      <span class="item"><i class="swatch" style="background:var(--context)"></i> Required minimum</span>
+    </div>
+    <div class="chart-box">
+      <svg id="chartCum" class="chart" role="img" aria-label="Cumulative miles logged compared with the required minimum"></svg>
+      <div class="tooltip" id="ttCum"></div>
+    </div>
+    <div id="tblCum" class="table-scroll hidden" style="margin-top:14px;"></div>
+  </section>
+
+  <!-- ===== daily chart ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Daily miles</h2>
+        <p class="sub">Last 30 days. Anything reaching the goal line cleared the minimum.</p>
+      </div>
+      <button class="icon" data-toggle="tblDaily">Table view</button>
+    </div>
+    <div class="chart-box">
+      <svg id="chartDaily" class="chart" role="img" aria-label="Miles run each day over the last 30 days"></svg>
+      <div class="tooltip" id="ttDaily"></div>
+    </div>
+    <div id="tblDaily" class="table-scroll hidden" style="margin-top:14px;"></div>
+  </section>
+
+  <!-- ===== shoes ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Shoe mileage</h2>
+        <p class="sub">Rotation totals, with wear measured against your retirement threshold.</p>
+      </div>
+    </div>
+    <div class="table-scroll" id="shoeTable"></div>
+  </section>
+
+  <!-- ===== run log ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Run log</h2>
+        <p class="sub" id="logCount"></p>
+      </div>
+    </div>
+    <div class="table-scroll" id="runTable"></div>
+  </section>
+
+  <p class="foot-note">
+    Saved in this browser only. Use <b>Export JSON</b> to move your log to another device —
+    the OneDrive copy of this file syncs the app, not the data.
+  </p>
+</div>
+<script>
+(function () {
+  "use strict";
+
+  /* =================== state =================== */
+  var KEY = "hyroxPrep.v1";
+  var DEFAULTS = { raceName: "", raceDate: "", planStart: "", dailyGoal: 1, shoeLimit: 400, runs: [], theme: "" };
+  var state = load();
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return Object.assign({}, DEFAULTS);
+      var s = Object.assign({}, DEFAULTS, JSON.parse(raw));
+      if (!Array.isArray(s.runs)) s.runs = [];
+      return s;
+    } catch (e) { return Object.assign({}, DEFAULTS); }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) { console.warn("Could not save:", e); }
+  }
+
+  /* =================== dates =================== */
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function toISO(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parseISO(s) { var p = String(s).split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function todayISO() { return toISO(new Date()); }
+  function addDays(iso, n) { var d = parseISO(iso); d.setDate(d.getDate() + n); return toISO(d); }
+  function dayDiff(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+  function fmtShort(iso) {
+    var d = parseISO(iso);
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+  function fmtLong(iso) {
+    var d = parseISO(iso);
+    return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  }
+
+  /* =================== numbers =================== */
+  function parseTime(str) {
+    if (!str) return null;
+    var parts = String(str).trim().split(":").map(function (p) { return Number(p); });
+    if (parts.some(function (n) { return !isFinite(n) || n < 0; })) return null;
+    if (parts.length === 1) return Math.round(parts[0] * 60);
+    if (parts.length === 2) return Math.round(parts[0] * 60 + parts[1]);
+    if (parts.length === 3) return Math.round(parts[0] * 3600 + parts[1] * 60 + parts[2]);
+    return null;
+  }
+  function fmtDur(sec) {
+    if (sec == null) return "—";
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.round(sec % 60);
+    return h > 0 ? h + ":" + pad(m) + ":" + pad(s) : m + ":" + pad(s);
+  }
+  function fmtPace(sec, miles) {
+    if (sec == null || !miles) return "—";
+    var p = sec / miles;
+    if (!isFinite(p) || p <= 0) return "—";
+    return Math.floor(p / 60) + ":" + pad(Math.round(p % 60));
+  }
+  function mi(n) { return (Math.round(n * 100) / 100).toFixed(2); }
+  function signed(n) { return (n >= 0 ? "+" : "−") + mi(Math.abs(n)); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* =================== derived =================== */
+  function goal() { return Number(state.dailyGoal) > 0 ? Number(state.dailyGoal) : 1; }
+
+  function byDay() {
+    var map = {};
+    state.runs.forEach(function (r) {
+      if (!map[r.date]) map[r.date] = { date: r.date, miles: 0, seconds: 0, timed: 0, runs: 0, shoes: [] };
+      var d = map[r.date];
+      d.miles += Number(r.miles) || 0;
+      d.runs += 1;
+      if (r.seconds != null) { d.seconds += r.seconds; d.timed += Number(r.miles) || 0; }
+      if (r.shoes && d.shoes.indexOf(r.shoes) === -1) d.shoes.push(r.shoes);
+    });
+    return map;
+  }
+
+  function stats() {
+    var g = goal(), today = todayISO();
+    var start = state.planStart || (state.runs.length ? state.runs.map(function (r) { return r.date; }).sort()[0] : today);
+    var race = state.raceDate || "";
+    var days = byDay();
+
+    var totalMiles = state.runs.reduce(function (a, r) { return a + (Number(r.miles) || 0); }, 0);
+    var totalSec = 0, timedMiles = 0;
+    state.runs.forEach(function (r) { if (r.seconds != null) { totalSec += r.seconds; timedMiles += Number(r.miles) || 0; } });
+
+    // the "as of" day: today, but never past race day
+    var asOf = race && dayDiff(race, today) > 0 ? race : today;
+    var elapsed = Math.max(0, dayDiff(start, asOf) + 1);
+    if (dayDiff(start, today) < 0) elapsed = 0;           // plan hasn't started
+    var requiredToDate = elapsed * g;
+    var banked = totalMiles - requiredToDate;
+
+    var planDays = race ? Math.max(0, dayDiff(start, race) + 1) : 0;
+    var totalRequired = planDays * g;
+    var daysToRace = race ? dayDiff(today, race) : null;
+
+    // streak of consecutive goal-meeting days ending today (or yesterday)
+    var streak = 0, cursor = today;
+    if (!days[today] || days[today].miles < g) cursor = addDays(today, -1);
+    while (days[cursor] && days[cursor].miles >= g - 1e-9) { streak++; cursor = addDays(cursor, -1); }
+
+    var best = 0, run = 0, keys = Object.keys(days).sort();
+    for (var i = 0; i < keys.length; i++) {
+      if (days[keys[i]].miles >= g - 1e-9) {
+        run = (i > 0 && dayDiff(keys[i - 1], keys[i]) === 1 && days[keys[i - 1]].miles >= g - 1e-9) ? run + 1 : 1;
+        if (run > best) best = run;
+      } else run = 0;
+    }
+
+    var hit = keys.filter(function (k) {
+      return days[k].miles >= g - 1e-9 && dayDiff(start, k) >= 0 && dayDiff(k, asOf) >= 0;
+    }).length;
+
+    return {
+      g: g, start: start, race: race, today: today, asOf: asOf, days: days,
+      totalMiles: totalMiles, totalSec: totalSec, timedMiles: timedMiles,
+      elapsed: elapsed, requiredToDate: requiredToDate, banked: banked,
+      planDays: planDays, totalRequired: totalRequired, daysToRace: daysToRace,
+      streak: streak, best: best, hit: hit,
+      remaining: Math.max(0, totalRequired - totalMiles)
+    };
+  }
+
+  /* =================== chart helpers =================== */
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function barPath(x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h));
+    return "M" + x + "," + (y + h) + " L" + x + "," + (y + r) +
+           " Q" + x + "," + y + " " + (x + r) + "," + y +
+           " L" + (x + w - r) + "," + y + " Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) +
+           " L" + (x + w) + "," + (y + h) + " Z";
+  }
+  function niceTicks(max, count) {
+    if (max <= 0) return [0];
+    var raw = max / count, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
+    var step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+    var out = [];
+    for (var v = 0; v <= max + step * 0.001; v += step) out.push(Math.round(v * 1000) / 1000);
+    return out;
+  }
+  function svgText(x, y, str, opts) {
+    opts = opts || {};
+    return '<text x="' + x + '" y="' + y + '" fill="' + (opts.fill || "var(--muted)") +
+      '" font-size="' + (opts.size || 11) + '" font-family="var(--sans)"' +
+      (opts.weight ? ' font-weight="' + opts.weight + '"' : "") +
+      (opts.anchor ? ' text-anchor="' + opts.anchor + '"' : "") +
+      ' style="font-variant-numeric:tabular-nums">' + esc(str) + "</text>";
+  }
+
+  var cumMeta = null, dailyMeta = null;
+
+  /* =================== cumulative chart =================== */
+  function renderCum(s) {
+    var svg = document.getElementById("chartCum");
+    var W = Math.max(320, svg.parentElement.clientWidth || 700), H = 250;
+    var m = { t: 16, r: 62, b: 30, l: 48 };
+    var iw = W - m.l - m.r, ih = H - m.t - m.b;
+
+    var n = s.race ? s.planDays : Math.max(s.elapsed, 2);
+
+    if (!s.race && !state.runs.length) {
+      svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+      svg.setAttribute("width", W); svg.setAttribute("height", H);
+      svg.innerHTML = svgText(W / 2, H / 2, "Set a race date and log a run to see progress", { anchor: "middle", size: 13 });
+      cumMeta = null; return;
+    }
+    n = Math.max(2, n);
+
+    var days = s.days;
+    var cum = [], running = 0;
+    var idxAsOf = Math.min(n - 1, dayDiff(s.start, s.asOf));
+    for (var i = 0; i < n; i++) {
+      var iso = addDays(s.start, i);
+      if (days[iso]) running += days[iso].miles;
+      cum.push({ i: i, iso: iso, actual: running, required: (i + 1) * s.g });
+    }
+    var yMax = Math.max(s.g * 2, n * s.g, running) * 1.06;
+    var x = function (i) { return m.l + (n === 1 ? 0 : i * iw / (n - 1)); };
+    var y = function (v) { return m.t + ih - (v / yMax) * ih; };
+
+    var out = "";
+    niceTicks(yMax, 4).forEach(function (t) {
+      out += '<line x1="' + m.l + '" y1="' + y(t) + '" x2="' + (m.l + iw) + '" y2="' + y(t) +
+             '" stroke="var(--grid)" stroke-width="1"/>';
+      out += svgText(m.l - 8, y(t) + 3.5, mi(t).replace(/\.00$/, ""), { anchor: "end" });
+    });
+
+    // required minimum — context series, grey
+    out += '<polyline fill="none" stroke="var(--context)" stroke-width="2" stroke-linecap="round" points="' +
+      cum.map(function (p) { return x(p.i) + "," + y(p.required); }).join(" ") + '"/>';
+
+    // actual — the emphasised series
+    var upto = cum.slice(0, Math.max(0, idxAsOf + 1));
+    if (upto.length) {
+      var pts = upto.map(function (p) { return x(p.i) + "," + y(p.actual); }).join(" ");
+      out += '<polygon fill="var(--series-1-wash)" points="' + x(0) + "," + y(0) + " " + pts + " " + x(upto[upto.length - 1].i) + "," + y(0) + '"/>';
+      out += '<polyline fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' + pts + '"/>';
+      var last = upto[upto.length - 1];
+      out += '<circle cx="' + x(last.i) + '" cy="' + y(last.actual) + '" r="4.5" fill="var(--series-1)" stroke="var(--surface-1)" stroke-width="2"/>';
+      out += svgText(x(last.i) + 9, y(last.actual) + 4, mi(last.actual) + " mi",
+        { fill: "var(--series-1)", weight: 600, size: 11.5 });
+    }
+    out += svgText(x(n - 1) + 9, y(cum[n - 1].required) + 4, mi(cum[n - 1].required).replace(/\.00$/, "") + " mi",
+      { fill: "var(--context)", weight: 600, size: 11.5 });
+
+    out += '<line x1="' + m.l + '" y1="' + (m.t + ih) + '" x2="' + (m.l + iw) + '" y2="' + (m.t + ih) + '" stroke="var(--axis)" stroke-width="1"/>';
+    [0, Math.floor((n - 1) / 2), n - 1].filter(function (v, k, a) { return a.indexOf(v) === k; }).forEach(function (i) {
+      out += svgText(x(i), m.t + ih + 17, fmtShort(addDays(s.start, i)), { anchor: i === 0 ? "start" : i === n - 1 ? "end" : "middle" });
+    });
+
+    out += '<g id="cumHover" opacity="0"><line y1="' + m.t + '" y2="' + (m.t + ih) + '" stroke="var(--axis)" stroke-width="1"/>' +
+           '<circle r="4.5" fill="var(--series-1)" stroke="var(--surface-1)" stroke-width="2"/></g>';
+    out += '<rect id="cumCapture" x="' + m.l + '" y="' + m.t + '" width="' + iw + '" height="' + ih + '" fill="transparent" style="cursor:crosshair"/>';
+
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("width", W); svg.setAttribute("height", H);
+    svg.innerHTML = out;
+    cumMeta = { cum: cum, x: x, y: y, m: m, iw: iw, n: n, idxAsOf: idxAsOf, g: s.g };
+    wireCum();
+  }
+
+  function wireCum() {
+    var svg = document.getElementById("chartCum"), tip = document.getElementById("ttCum");
+    var cap = svg.querySelector("#cumCapture"), hov = svg.querySelector("#cumHover");
+    if (!cap || !cumMeta) return;
+    function move(ev) {
+      var r = svg.getBoundingClientRect();
+      var px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+      var mm = cumMeta;
+      var i = Math.round((px - mm.m.l) / (mm.iw / Math.max(1, mm.n - 1)));
+      i = Math.max(0, Math.min(mm.n - 1, i));
+      var p = mm.cum[i], shown = i <= mm.idxAsOf;
+      hov.setAttribute("opacity", "1");
+      hov.querySelector("line").setAttribute("x1", mm.x(i));
+      hov.querySelector("line").setAttribute("x2", mm.x(i));
+      var c = hov.querySelector("circle");
+      c.setAttribute("cx", mm.x(i)); c.setAttribute("cy", mm.y(shown ? p.actual : p.required));
+      c.setAttribute("opacity", shown ? "1" : "0");
+      var delta = p.actual - p.required;
+      tip.innerHTML = '<div class="tt-title">' + esc(fmtShort(p.iso)) + "</div>" +
+        (shown ? '<div class="tt-row"><span>Logged</span><b>' + mi(p.actual) + " mi</b></div>" : "") +
+        '<div class="tt-row"><span>Required</span><b>' + mi(p.required) + " mi</b></div>" +
+        (shown ? '<div class="tt-row"><span>' + (delta >= 0 ? "Banked" : "Behind") + "</span><b>" + signed(delta) + " mi</b></div>" : "");
+      tip.style.opacity = "1";
+      var tw = tip.offsetWidth;
+      tip.style.left = Math.max(0, Math.min(r.width - tw, mm.x(i) - tw / 2)) + "px";
+      tip.style.top = (mm.y(shown ? p.actual : p.required) - tip.offsetHeight - 12) + "px";
+    }
+    function out() { hov.setAttribute("opacity", "0"); tip.style.opacity = "0"; }
+    cap.addEventListener("mousemove", move);
+    cap.addEventListener("mouseleave", out);
+    cap.addEventListener("touchmove", function (e) { move(e); e.preventDefault(); }, { passive: false });
+    cap.addEventListener("touchend", out);
+  }
+
+  /* =================== daily bar chart =================== */
+  function renderDaily(s) {
+    var svg = document.getElementById("chartDaily");
+    var W = Math.max(320, svg.parentElement.clientWidth || 700), H = 230;
+    var m = { t: 16, r: 58, b: 30, l: 40 };
+    var iw = W - m.l - m.r, ih = H - m.t - m.b;
+    var N = 30, end = s.today;
+    var win = [];
+    for (var k = N - 1; k >= 0; k--) {
+      var iso = addDays(end, -k);
+      win.push({ iso: iso, miles: s.days[iso] ? s.days[iso].miles : 0, d: s.days[iso] || null });
+    }
+    var maxV = Math.max(s.g, Math.max.apply(null, win.map(function (w) { return w.miles; }))) * 1.18;
+    var band = iw / N, bw = Math.min(24, Math.max(4, band - 4));
+    var y = function (v) { return m.t + ih - (v / maxV) * ih; };
+
+    var out = "";
+    niceTicks(maxV, 3).forEach(function (t) {
+      out += '<line x1="' + m.l + '" y1="' + y(t) + '" x2="' + (m.l + iw) + '" y2="' + y(t) + '" stroke="var(--grid)" stroke-width="1"/>';
+      out += svgText(m.l - 8, y(t) + 3.5, String(Math.round(t * 10) / 10), { anchor: "end" });
+    });
+
+    win.forEach(function (w, i) {
+      if (w.miles <= 0) return;
+      var bx = m.l + i * band + (band - bw) / 2, by = y(w.miles);
+      out += '<path d="' + barPath(bx, by, bw, m.t + ih - by, 4) + '" fill="var(--series-1)"/>';
+    });
+
+    // goal reference line — solid, labelled (position, not colour, carries the meaning)
+    out += '<line x1="' + m.l + '" y1="' + y(s.g) + '" x2="' + (m.l + iw) + '" y2="' + y(s.g) + '" stroke="var(--context)" stroke-width="1.5"/>';
+    out += svgText(m.l + iw + 8, y(s.g) + 4, mi(s.g).replace(/\.?0+$/, "") + " mi goal", { fill: "var(--context)", weight: 600, size: 11.5 });
+
+    out += '<line x1="' + m.l + '" y1="' + (m.t + ih) + '" x2="' + (m.l + iw) + '" y2="' + (m.t + ih) + '" stroke="var(--axis)" stroke-width="1"/>';
+    [0, 9, 19, 29].forEach(function (i) {
+      out += svgText(m.l + i * band + band / 2, m.t + ih + 17, fmtShort(win[i].iso), { anchor: "middle" });
+    });
+    win.forEach(function (w, i) {
+      out += '<rect class="dcap" data-i="' + i + '" x="' + (m.l + i * band) + '" y="' + m.t + '" width="' + band + '" height="' + ih + '" fill="transparent"/>';
+    });
+
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("width", W); svg.setAttribute("height", H);
+    svg.innerHTML = out;
+    dailyMeta = { win: win, band: band, m: m, y: y, g: s.g, ih: ih };
+
+    var tip = document.getElementById("ttDaily");
+    Array.prototype.forEach.call(svg.querySelectorAll(".dcap"), function (rect) {
+      rect.addEventListener("mouseenter", function () {
+        var w = dailyMeta.win[Number(rect.dataset.i)], d = w.d;
+        var over = w.miles - dailyMeta.g;
+        tip.innerHTML = '<div class="tt-title">' + esc(fmtShort(w.iso)) + "</div>" +
+          '<div class="tt-row"><span>Miles</span><b>' + mi(w.miles) + "</b></div>" +
+          (d && d.timed ? '<div class="tt-row"><span>Pace</span><b>' + fmtPace(d.seconds, d.timed) + "/mi</b></div>" : "") +
+          (d && d.shoes.length ? '<div class="tt-row"><span>Shoes</span><b>' + esc(d.shoes.join(", ")) + "</b></div>" : "") +
+          '<div class="tt-row"><span>' + (over >= 0 ? "Over goal" : "Short") + "</span><b>" + signed(over) + "</b></div>";
+        tip.style.opacity = "1";
+        var cx = dailyMeta.m.l + Number(rect.dataset.i) * dailyMeta.band + dailyMeta.band / 2;
+        var tw = tip.offsetWidth, rw = svg.getBoundingClientRect().width;
+        tip.style.left = Math.max(0, Math.min(rw - tw, cx - tw / 2)) + "px";
+        tip.style.top = Math.max(0, dailyMeta.y(Math.max(w.miles, dailyMeta.g)) - tip.offsetHeight - 12) + "px";
+      });
+      rect.addEventListener("mouseleave", function () { tip.style.opacity = "0"; });
+    });
+  }
+
+  /* =================== tables =================== */
+  function renderTables(s) {
+    // --- cumulative table twin ---
+    var rows = [], running = 0;
+    var n = s.race ? s.planDays : s.elapsed;
+    for (var i = 0; i < n; i++) {
+      var iso = addDays(s.start, i);
+      if (s.days[iso]) running += s.days[iso].miles;
+      if (dayDiff(iso, s.asOf) < 0) break;
+      rows.push({ iso: iso, cum: running, req: (i + 1) * s.g });
+    }
+    document.getElementById("tblCum").innerHTML = rows.length ? '<table><thead><tr><th>Date</th><th class="num">Cumulative</th><th class="num">Required</th><th class="num">Banked</th></tr></thead><tbody>' +
+      rows.slice().reverse().map(function (r) {
+        var d = r.cum - r.req;
+        return "<tr><td>" + esc(fmtShort(r.iso)) + '</td><td class="num">' + mi(r.cum) + '</td><td class="num">' + mi(r.req) +
+          '</td><td class="num ' + (d >= 0 ? "pos" : "neg") + '">' + signed(d) + "</td></tr>";
+      }).join("") + "</tbody></table>" : '<p class="empty">Nothing logged yet.</p>';
+
+    // --- daily table twin ---
+    var keys = Object.keys(s.days).sort().reverse();
+    document.getElementById("tblDaily").innerHTML = keys.length ? '<table><thead><tr><th>Date</th><th class="num">Miles</th><th class="num">Pace</th><th class="num">Vs. goal</th><th>Result</th></tr></thead><tbody>' +
+      keys.map(function (k) {
+        var d = s.days[k], over = d.miles - s.g, ok = d.miles >= s.g - 1e-9;
+        return "<tr><td>" + esc(fmtShort(k)) + '</td><td class="num">' + mi(d.miles) +
+          '</td><td class="num">' + (d.timed ? fmtPace(d.seconds, d.timed) : "—") +
+          '</td><td class="num ' + (over >= 0 ? "pos" : "neg") + '">' + signed(over) + "</td><td>" +
+          '<span class="status"><span class="dot" style="background:' + (ok ? "var(--good)" : "var(--critical)") + '"></span>' +
+          (ok ? (over > 1e-9 ? "Over minimum" : "Met minimum") : "Under minimum") + "</span></td></tr>";
+      }).join("") + "</tbody></table>" : '<p class="empty">Nothing logged yet.</p>';
+
+    // --- shoes ---
+    var shoes = {};
+    state.runs.forEach(function (r) {
+      var name = (r.shoes || "").trim(); if (!name) name = "Unspecified";
+      var key = name.toLowerCase();
+      if (!shoes[key]) shoes[key] = { name: name, miles: 0, runs: 0, sec: 0, timed: 0, last: r.date };
+      var sh = shoes[key];
+      sh.miles += Number(r.miles) || 0; sh.runs += 1;
+      if (r.seconds != null) { sh.sec += r.seconds; sh.timed += Number(r.miles) || 0; }
+      if (r.date > sh.last) sh.last = r.date;
+    });
+    var list = Object.keys(shoes).map(function (k) { return shoes[k]; }).sort(function (a, b) { return b.miles - a.miles; });
+    var lim = Number(state.shoeLimit) > 0 ? Number(state.shoeLimit) : 400;
+    document.getElementById("shoeTable").innerHTML = list.length ? '<table><thead><tr><th>Shoes</th><th class="num">Runs</th><th class="num">Miles</th><th class="num">Avg pace</th><th>Wear</th><th>Status</th><th class="num">Last worn</th></tr></thead><tbody>' +
+      list.map(function (sh) {
+        var pct = Math.min(100, (sh.miles / lim) * 100);
+        var cls = pct >= 100 ? "crit" : pct >= 75 ? "warn" : "";
+        var label = pct >= 100 ? "Retire" : pct >= 75 ? "Wearing out" : "Good";
+        var col = pct >= 100 ? "var(--critical)" : pct >= 75 ? "var(--warning)" : "var(--good)";
+        return "<tr><td>" + esc(sh.name) + '</td><td class="num">' + sh.runs + '</td><td class="num">' + mi(sh.miles) +
+          '</td><td class="num">' + (sh.timed ? fmtPace(sh.sec, sh.timed) : "—") +
+          '</td><td><span class="meter ' + cls + '"><span style="width:' + pct.toFixed(1) + '%"></span></span></td>' +
+          '<td><span class="status"><span class="dot" style="background:' + col + '"></span>' + label + " " +
+          Math.round(pct) + '%</span></td><td class="num">' + esc(fmtShort(sh.last)) + "</td></tr>";
+      }).join("") + "</tbody></table>" : '<p class="empty">No shoes recorded yet — add them when you log a run.</p>';
+
+    var dl = document.getElementById("shoeList");
+    dl.innerHTML = list.filter(function (sh) { return sh.name !== "Unspecified"; })
+      .map(function (sh) { return '<option value="' + esc(sh.name) + '">'; }).join("");
+
+    // --- run log ---
+    var runs = state.runs.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id; });
+    document.getElementById("runTable").innerHTML = runs.length ? '<table><thead><tr><th>Date</th><th class="num">Miles</th><th class="num">Time</th><th class="num">Pace /mi</th><th>Shoes</th><th>Notes</th><th></th></tr></thead><tbody>' +
+      runs.map(function (r) {
+        return "<tr><td>" + esc(fmtShort(r.date)) + '</td><td class="num">' + mi(r.miles) +
+          '</td><td class="num">' + fmtDur(r.seconds) + '</td><td class="num">' + fmtPace(r.seconds, r.miles) +
+          "</td><td>" + esc(r.shoes || "—") + "</td><td>" + esc(r.notes || "") +
+          '</td><td class="num"><button class="icon" data-del="' + r.id + '" aria-label="Delete run">Delete</button></td></tr>';
+      }).join("") + "</tbody></table>" : '<p class="empty">No runs logged yet. Add your first one above.</p>';
+
+    document.getElementById("logCount").textContent = runs.length
+      ? runs.length + " run" + (runs.length === 1 ? "" : "s") + " logged · " + mi(s.totalMiles) + " miles total"
+      : "Nothing logged yet.";
+  }
+
+  /* =================== hero + KPI row =================== */
+  function renderHead(s) {
+    var hero = document.getElementById("heroDays"), lab = document.getElementById("heroLabel");
+    hero.classList.remove("small");
+    if (s.daysToRace == null) {
+      hero.textContent = "—"; hero.classList.add("small");
+      lab.textContent = "set a race date to start the countdown";
+    } else if (s.daysToRace > 0) {
+      hero.textContent = s.daysToRace; lab.textContent = "day" + (s.daysToRace === 1 ? "" : "s") + " until race day";
+    } else if (s.daysToRace === 0) {
+      hero.textContent = "Today"; hero.classList.add("small"); lab.textContent = "race day — go get it";
+    } else {
+      hero.textContent = Math.abs(s.daysToRace); lab.textContent = "days since race day";
+    }
+    document.getElementById("heroRace").textContent =
+      s.race ? [state.raceName, fmtLong(s.race)].filter(Boolean).join(" · ") : "";
+
+    var pct = s.elapsed > 0 ? Math.round((s.hit / s.elapsed) * 100) : 0;
+    var avg = s.timedMiles ? fmtPace(s.totalSec, s.timedMiles) + "/mi" : "—";
+    var tiles = [
+      { l: "Miles logged", v: mi(s.totalMiles), n: s.race ? "of " + mi(s.totalRequired).replace(/\.00$/, "") + " mi required by race day" : "no race date set" },
+      { l: "Banked vs. required", v: signed(s.banked), n: (s.banked >= 0 ? "ahead of" : "behind") + " the " + mi(s.g).replace(/\.?0+$/, "") + " mi/day minimum", c: s.banked >= 0 ? "pos" : "neg" },
+      { l: "Current streak", v: s.streak, n: "best " + s.best + " day" + (s.best === 1 ? "" : "s") },
+      { l: "Days at goal", v: pct + "%", n: s.hit + " of " + s.elapsed + " day" + (s.elapsed === 1 ? "" : "s") },
+      { l: "Average pace", v: avg, n: s.timedMiles ? mi(s.timedMiles) + " mi timed" : "add times to see pace" }
+    ];
+    document.getElementById("kpis").innerHTML = tiles.map(function (t) {
+      return '<div class="kpi"><div class="k-label">' + t.l + '</div><div class="k-value ' + (t.c || "") + '">' +
+        esc(t.v) + '</div><div class="k-note">' + esc(t.n) + "</div></div>";
+    }).join("");
+
+    document.getElementById("goalEcho").textContent = mi(s.g).replace(/\.?0+$/, "") + " mi";
+    document.getElementById("setupBanner").classList.toggle("hidden", !!s.race);
+  }
+
+  /* =================== render =================== */
+  function render() {
+    var s = stats();
+    renderHead(s);
+    renderCum(s);
+    renderDaily(s);
+    renderTables(s);
+  }
+
+  /* =================== events =================== */
+  function bindSetting(id, key, cast) {
+    var el = document.getElementById(id);
+    el.addEventListener("change", function () {
+      state[key] = cast ? cast(el.value) : el.value;
+      if (key === "raceDate" && state.raceDate && !state.planStart) {
+        state.planStart = todayISO();
+        document.getElementById("planStart").value = state.planStart;
+      }
+      save(); render();
+    });
+  }
+  bindSetting("raceName", "raceName");
+  bindSetting("raceDate", "raceDate");
+  bindSetting("planStart", "planStart");
+  bindSetting("dailyGoal", "dailyGoal", Number);
+  bindSetting("shoeLimit", "shoeLimit", Number);
+
+  document.getElementById("logForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var date = document.getElementById("fDate").value || todayISO();
+    var miles = Number(document.getElementById("fMiles").value);
+    var timeRaw = document.getElementById("fTime").value.trim();
+    var sec = timeRaw ? parseTime(timeRaw) : null;
+    var hint = document.getElementById("formHint");
+    if (!(miles > 0)) { hint.textContent = "Enter a distance greater than zero."; return; }
+    if (timeRaw && sec == null) { hint.textContent = "Couldn't read that time — try mm:ss, like 9:45."; return; }
+
+    state.runs.push({
+      id: Date.now(), date: date, miles: miles, seconds: sec,
+      shoes: document.getElementById("fShoes").value.trim(),
+      notes: document.getElementById("fNotes").value.trim()
+    });
+    if (!state.planStart || date < state.planStart) {
+      state.planStart = state.planStart ? (date < state.planStart ? date : state.planStart) : date;
+      document.getElementById("planStart").value = state.planStart;
+    }
+    save();
+
+    var dayTotal = state.runs.filter(function (r) { return r.date === date; })
+      .reduce(function (a, r) { return a + Number(r.miles); }, 0);
+    var over = dayTotal - goal();
+    hint.textContent = "Logged " + mi(miles) + " mi on " + fmtShort(date) + " — " +
+      (over >= 0 ? mi(over) + " mi over" : mi(-over) + " mi short of") + " the daily minimum" +
+      (sec ? " at " + fmtPace(sec, miles) + "/mi." : ".");
+
+    document.getElementById("fMiles").value = "";
+    document.getElementById("fTime").value = "";
+    document.getElementById("fNotes").value = "";
+    render();
+  });
+
+  document.getElementById("runTable").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-del]"); if (!btn) return;
+    var id = Number(btn.dataset.del);
+    var r = state.runs.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    if (!confirm("Delete the " + mi(r.miles) + " mi run on " + fmtShort(r.date) + "?")) return;
+    state.runs = state.runs.filter(function (x) { return x.id !== id; });
+    save(); render();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-toggle]"), function (btn) {
+    btn.addEventListener("click", function () {
+      var el = document.getElementById(btn.dataset.toggle);
+      var open = el.classList.toggle("hidden");
+      btn.textContent = open ? "Table view" : "Hide table";
+    });
+  });
+
+  document.getElementById("btnTheme").addEventListener("click", function () {
+    var cur = document.documentElement.getAttribute("data-theme");
+    var next = cur === "dark" ? "light" : cur === "light" ? "" : "dark";
+    if (next) document.documentElement.setAttribute("data-theme", next);
+    else document.documentElement.removeAttribute("data-theme");
+    state.theme = next; save(); render();
+  });
+
+  document.getElementById("btnExport").addEventListener("click", function () {
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "hyrox-prep-" + todayISO() + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+  document.getElementById("btnImport").addEventListener("click", function () { document.getElementById("fileImport").click(); });
+  document.getElementById("fileImport").addEventListener("change", function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        var data = JSON.parse(fr.result);
+        if (!data || !Array.isArray(data.runs)) throw new Error("no runs array");
+        if (!confirm("Replace the current log with " + data.runs.length + " runs from this file?")) return;
+        state = Object.assign({}, DEFAULTS, data);
+        save(); fill(); render();
+      } catch (err) { alert("That doesn't look like a Hyrox Prep export."); }
+      e.target.value = "";
+    };
+    fr.readAsText(f);
+  });
+
+  var rt;
+  window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(render, 120); });
+
+  /* =================== init =================== */
+  function fill() {
+    if (state.theme) document.documentElement.setAttribute("data-theme", state.theme);
+    document.getElementById("raceName").value = state.raceName || "";
+    document.getElementById("raceDate").value = state.raceDate || "";
+    document.getElementById("planStart").value = state.planStart || "";
+    document.getElementById("dailyGoal").value = state.dailyGoal;
+    document.getElementById("shoeLimit").value = state.shoeLimit;
+    document.getElementById("fDate").value = todayISO();
+  }
+  fill();
+  render();
+})();
+</script>
+</body>
+</html>
