@@ -56,6 +56,31 @@ click away on every screen. The dates were compiled from public listings on
 unofficial - confirm on the official site before booking. Refreshing the list
 means editing the `RACES` array.
 
+## Garmin
+
+There is no automatic link, and two separate things prevent one:
+
+1. **The artifact sandbox blocks all outbound requests.** The published page
+   cannot call any external API at runtime, Garmin's or anyone's. Links out
+   work; network calls do not.
+2. **Garmin has no personal API.** The Connect Developer Program requires a
+   legal entity and rejects personal-use applications, and new onboarding was
+   reported paused during 2026 with the request form withdrawn.
+
+So the app imports the CSV that Garmin Connect exports instead: Garmin Connect
+on the web -> Activities -> scroll until the runs you want are loaded ->
+**Export CSV** (upper right).
+
+Garmin does not document that file's columns and they vary by account, so
+nothing is hardcoded. Headers are matched by pattern, every guess is shown as an
+editable dropdown, distance units are selectable, activities are filtered by
+type (default `run`, which keeps treadmill runs), and a preview shows exactly
+what will be added before anything is written. Re-importing the same file is
+safe - anything already logged, matched on date and distance, is skipped.
+
+Imported runs carry no shoe, so set that in the run log if you want them counted
+against a pair in the closet.
+
 ## Teams and the leaderboard
 
 A team is just a name held on each athlete, matched case-insensitively - create

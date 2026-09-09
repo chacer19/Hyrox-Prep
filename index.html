@@ -219,6 +219,11 @@ tbody tr:hover { background: var(--ghost); }
 .shoe-note { font-size: 11.5px; color: var(--text-secondary); margin-top: 8px; line-height: 1.45; }
 .shoe-note.grip { color: var(--serious); }
 
+.steps { margin: 0 0 14px; padding-left: 20px; color: var(--text-secondary); font-size: 12.5px; }
+.steps li { margin-bottom: 4px; }
+.map-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
+.gc-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+
 /* leaderboard */
 .rank { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 650; width: 1%; white-space: nowrap; }
 tr.you { background: var(--series-1-wash); }
@@ -511,6 +516,40 @@ nav.tabs button.tab[aria-current="page"] {
       </div>
     </form>
     <p class="foot-note" id="formHint"></p>
+  </section>
+
+  <!-- ===== garmin import ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Import from Garmin</h2>
+        <p class="sub">Garmin has no personal API, so this reads the CSV you export from Garmin Connect. Columns are matched automatically and you can correct them before anything is added.</p>
+      </div>
+      <button class="icon" data-toggle="gcPanel">Show</button>
+    </div>
+    <div id="gcPanel" class="hidden">
+      <ol class="steps">
+        <li>Open <b>Garmin Connect</b> on the web &rarr; <b>Activities</b>, and scroll until every run you want is loaded.</li>
+        <li>Hit <b>Export CSV</b> (upper right of the Activities list).</li>
+        <li>Choose the file below.</li>
+      </ol>
+      <div class="row log-grid">
+        <label class="field">Garmin CSV
+          <input type="file" id="gcFile" accept=".csv,text/csv">
+        </label>
+        <label class="field">Distance units in the file
+          <select id="gcUnit">
+            <option value="mi">Miles</option>
+            <option value="km">Kilometres</option>
+          </select>
+        </label>
+        <label class="field">Only these activities
+          <input type="text" id="gcFilter" value="run" placeholder="run">
+        </label>
+      </div>
+      <div id="gcMap"></div>
+      <div id="gcPreview"></div>
+    </div>
   </section>
 
   <!-- ===== cumulative chart ===== -->
@@ -2858,6 +2897,180 @@ nav.tabs button.tab[aria-current="page"] {
   function render() { renderMine(); renderBoards(); }
   HP.onChange(function () { reseat(); render(); });
   render();
+})();
+</script>
+
+<script>
+/* ============ Garmin CSV import ============
+   Garmin has no personal API and the artifact sandbox blocks outbound requests
+   anyway, so this reads the CSV exported from Garmin Connect. Garmin does not
+   document that file's columns and they vary by account, so nothing here is
+   hardcoded: headers are matched by pattern, every guess is shown as an
+   editable dropdown, and nothing is written until the preview is accepted. */
+(function () {
+  "use strict";
+  var rows = null, head = [], map = {}, parsed = [];
+
+  function $(id) { return document.getElementById(id); }
+
+  function parseCSV(text) {
+    var out = [], row = [], cur = "", q = false, i, c;
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);   // strip BOM
+    for (i = 0; i < text.length; i++) {
+      c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+        else cur += c;
+      } else if (c === '"') q = true;
+      else if (c === ",") { row.push(cur); cur = ""; }
+      else if (c === "\n") { row.push(cur); out.push(row); row = []; cur = ""; }
+      else if (c !== "\r") cur += c;
+    }
+    if (cur.length || row.length) { row.push(cur); out.push(row); }
+    return out.filter(function (r) { return r.some(function (x) { return String(x).trim(); }); });
+  }
+
+  var GUESS = {
+    date:  [/^date$/i, /start.*time/i, /date/i],
+    type:  [/^activity type$/i, /activity.*type/i, /^type$/i],
+    dist:  [/^distance$/i, /distance/i],
+    time:  [/^time$/i, /moving.*time/i, /elapsed/i, /duration/i],
+    title: [/^title$/i, /^name$/i, /favorite/i]
+  };
+  function guess(field) {
+    var pats = GUESS[field];
+    for (var p = 0; p < pats.length; p++)
+      for (var i = 0; i < head.length; i++)
+        if (pats[p].test(String(head[i]).trim())) return i;
+    return -1;
+  }
+
+  function toISO(v) {
+    v = String(v || "").trim();
+    var m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return m[1] + "-" + HP.pad(+m[2]) + "-" + HP.pad(+m[3]);
+    m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);          // US m/d/Y
+    if (m) return m[3] + "-" + HP.pad(+m[1]) + "-" + HP.pad(+m[2]);
+    var d = new Date(v);
+    return isNaN(d.getTime()) ? null : HP.toISO(d);
+  }
+  function num(v) {
+    var t = String(v || "").replace(/[^0-9.,-]/g, "");
+    if (t.indexOf(",") > -1 && t.indexOf(".") === -1) t = t.replace(",", ".");
+    else t = t.replace(/,/g, "");
+    var n = parseFloat(t);
+    return isFinite(n) ? n : null;
+  }
+
+  function build() {
+    if (!rows) return;
+    var unit = $("gcUnit").value;
+    var filter = $("gcFilter").value.trim().toLowerCase();
+    var existing = {};
+    (HP.active().runs || []).forEach(function (r) {
+      existing[r.date + "|" + (Math.round((Number(r.miles) || 0) * 100) / 100)] = true;
+    });
+
+    parsed = [];
+    var skippedType = 0, skippedDup = 0, skippedBad = 0, seen = {};
+    rows.slice(1).forEach(function (r) {
+      var typ = map.type >= 0 ? String(r[map.type] || "") : "";
+      if (filter && typ && typ.toLowerCase().indexOf(filter) === -1) { skippedType++; return; }
+      var date = map.date >= 0 ? toISO(r[map.date]) : null;
+      var dist = map.dist >= 0 ? num(r[map.dist]) : null;
+      if (!date || !(dist > 0)) { skippedBad++; return; }
+      var miles = unit === "km" ? dist * 0.621371 : dist;
+      miles = Math.round(miles * 100) / 100;
+      var key = date + "|" + miles;
+      if (existing[key] || seen[key]) { skippedDup++; return; }
+      seen[key] = true;
+      parsed.push({
+        date: date, miles: miles,
+        seconds: map.time >= 0 ? HP.parseTime(String(r[map.time] || "").trim()) : null,
+        notes: map.title >= 0 ? String(r[map.title] || "").trim() : "",
+        type: typ
+      });
+    });
+    parsed.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+
+    var total = parsed.reduce(function (a, r) { return a + r.miles; }, 0);
+    $("gcPreview").innerHTML =
+      '<p class="foot-note" style="margin-top:16px;"><b>' + parsed.length + " run" +
+      (parsed.length === 1 ? "" : "s") + "</b> ready to import" +
+      (parsed.length ? " \u00b7 " + HP.mi(total) + " miles" : "") + ". Skipped: " +
+      skippedType + " not matching the filter, " + skippedDup + " already logged, " +
+      skippedBad + " missing a date or distance.</p>" +
+      (parsed.length
+        ? '<div class="table-scroll"><table><thead><tr><th>Date</th><th class="num">Miles</th><th class="num">Time</th><th>Activity</th><th>Title</th></tr></thead><tbody>' +
+          parsed.slice(0, 8).map(function (r) {
+            return "<tr><td>" + HP.esc(HP.fmtShort(r.date)) + '</td><td class="num">' + HP.mi(r.miles) +
+              '</td><td class="num">' + HP.fmtDur(r.seconds) + "</td><td>" + HP.esc(r.type || "\u2014") +
+              "</td><td>" + HP.esc(r.notes) + "</td></tr>";
+          }).join("") + "</tbody></table></div>" +
+          (parsed.length > 8 ? '<p class="foot-note">\u2026 and ' + (parsed.length - 8) + " more.</p>" : "") +
+          '<div class="gc-actions"><button type="button" id="gcGo" class="primary">Import ' +
+          parsed.length + " run" + (parsed.length === 1 ? "" : "s") + "</button>" +
+          '<span class="foot-note" id="gcDone"></span></div>'
+        : "");
+
+    var go = $("gcGo");
+    if (go) go.addEventListener("click", function () {
+      if (!HP.canEdit()) { $("gcDone").textContent = "Claim your athlete first."; return; }
+      var p = HP.active(), base = Date.now();
+      parsed.forEach(function (r, i) {
+        p.runs.push({ id: base + i, date: r.date, miles: r.miles, seconds: r.seconds,
+                      shoes: "", notes: r.notes });
+      });
+      if (!p.planStart || parsed[0].date < p.planStart) p.planStart = parsed[0].date;
+      var n = parsed.length;
+      HP.save(); HP.emit();
+      rows = null; parsed = [];
+      $("gcFile").value = ""; $("gcMap").innerHTML = "";
+      // the confirmation replaces the preview rather than being wiped with it
+      $("gcPreview").innerHTML = '<p class="foot-note" style="margin-top:16px;"><b>Imported ' + n +
+        " run" + (n === 1 ? "" : "s") + ".</b> They carry no shoe \u2014 set that in the run log if you want them counted against a pair. " +
+        "Re-importing the same file is safe: anything already logged is skipped.</p>";
+    });
+  }
+
+  function renderMap() {
+    var fields = [["date", "Date"], ["dist", "Distance"], ["time", "Time"],
+                  ["type", "Activity type"], ["title", "Title / notes"]];
+    $("gcMap").innerHTML = '<p class="foot-note" style="margin-top:14px;">Matched these columns — change any that look wrong:</p>' +
+      '<div class="map-grid">' + fields.map(function (f) {
+        return '<label class="field">' + f[1] + '<select data-map="' + f[0] + '">' +
+          '<option value="-1">Not used</option>' +
+          head.map(function (h, i) {
+            return '<option value="' + i + '"' + (map[f[0]] === i ? " selected" : "") + ">" +
+              HP.esc(String(h).trim() || "column " + (i + 1)) + "</option>";
+          }).join("") + "</select></label>";
+      }).join("") + "</div>";
+    Array.prototype.forEach.call($("gcMap").querySelectorAll("select[data-map]"), function (sel) {
+      sel.addEventListener("change", function () {
+        map[sel.dataset.map] = Number(sel.value); build();
+      });
+    });
+  }
+
+  $("gcFile").addEventListener("change", function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      rows = parseCSV(String(fr.result));
+      if (rows.length < 2) {
+        $("gcPreview").innerHTML = '<p class="foot-note">That file has no data rows.</p>';
+        rows = null; return;
+      }
+      head = rows[0];
+      ["date", "type", "dist", "time", "title"].forEach(function (k) { map[k] = guess(k); });
+      renderMap(); build();
+    };
+    fr.readAsText(f);
+  });
+  ["gcUnit", "gcFilter"].forEach(function (id) {
+    $(id).addEventListener("change", build);
+    $(id).addEventListener("input", build);
+  });
 })();
 </script>
 
