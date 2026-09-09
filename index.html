@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hyrox Prep</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 /* Hyrox Prep — shared design tokens and components (index.html + training.html) */
 /* ---------- tokens ---------- */
 :root {
@@ -26,42 +27,42 @@
   --success-text:    #006300;
   --border:          rgba(11,11,11,0.10);
   --ghost:           rgba(11,11,11,0.04);
-  --radius:          10px;
-  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius:          8px;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --page:           #0d0d0d;
-    --surface-1:      #1a1a19;
-    --text-primary:   #ffffff;
-    --text-secondary: #c3c2b7;
-    --muted:          #898781;
-    --grid:           #2c2c2a;
-    --axis:           #383835;
-    --series-1:       #3987e5;
-    --series-1-wash:  rgba(57,135,229,0.12);
-    --context:        #898781;
-    --success-text:   #0ca30c;
-    --border:         rgba(255,255,255,0.10);
-    --ghost:          rgba(255,255,255,0.05);
+    --page:           #161826;
+    --surface-1:      #232532;
+    --text-primary:   #e9e9ed;
+    --text-secondary: #b2b6ca;
+    --muted:          #9397ab;
+    --grid:           #292b31;
+    --axis:           #3f424d;
+    --series-1:       #9184d9;
+    --series-1-wash:  rgba(145,132,217,0.12);
+    --context:        #75798c;
+    --success-text:   #7ddb8f;
+    --border:         #3f424d;
+    --ghost:          rgba(233,233,237,0.06);
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page:           #0d0d0d;
-  --surface-1:      #1a1a19;
-  --text-primary:   #ffffff;
-  --text-secondary: #c3c2b7;
-  --muted:          #898781;
-  --grid:           #2c2c2a;
-  --axis:           #383835;
-  --series-1:       #3987e5;
-  --series-1-wash:  rgba(57,135,229,0.12);
-  --context:        #898781;
-  --success-text:   #0ca30c;
-  --border:         rgba(255,255,255,0.10);
-  --ghost:          rgba(255,255,255,0.05);
+  --page:           #161826;
+  --surface-1:      #232532;
+  --text-primary:   #e9e9ed;
+  --text-secondary: #b2b6ca;
+  --muted:          #9397ab;
+  --grid:           #292b31;
+  --axis:           #3f424d;
+  --series-1:       #9184d9;
+  --series-1-wash:  rgba(145,132,217,0.12);
+  --context:        #75798c;
+  --success-text:   #7ddb8f;
+  --border:         #3f424d;
+  --ghost:          rgba(233,233,237,0.06);
 }
 
 /* ---------- base ---------- */
