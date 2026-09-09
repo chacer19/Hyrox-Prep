@@ -1,0 +1,2029 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyrox Prep</title>
+<style>
+/* Hyrox Prep — Nocturne skin. Token names and class names are unchanged from the
+   original sheet, so every chart, table and script that reads var(--series-1),
+   var(--grid), var(--axis) etc. keeps working. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  color-scheme: dark;
+  --page:            #161826;
+  --surface-1:       #232532;
+  --text-primary:    #e9e9ed;
+  --text-secondary:  #b2b6ca;
+  --muted:           #9397ab;
+  --grid:            #292b31;
+  --axis:            #3f424d;
+  --series-1:        #9184d9;
+  --series-1-wash:   rgba(145,132,217,0.12);
+  --context:         #75798c;
+  --good:            #9184d9;
+  --warning:         #b5abfc;
+  --critical:        #e7e5fe;
+  --success-text:    #b5abfc;
+  --border:          #3f424d;
+  --ghost:           rgba(233,233,237,0.06);
+  --radius:          8px;
+  --sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* ---------- base ---------- */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--page);
+  color: var(--text-primary);
+  font: 15px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: 20px 18px 104px; }
+a { color: var(--series-1); text-underline-offset: 3px; }
+a:hover { color: #b5abfc; }
+::selection { background: rgba(145,132,217,0.3); }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+
+h1 { font-size: 21px; font-weight: 500; margin: 0; letter-spacing: -0.015em; }
+h2 { font-size: 16px; font-weight: 500; margin: 0 0 3px; letter-spacing: -0.01em; }
+h3 { font-weight: 500; }
+.sub { color: var(--text-secondary); font-size: 12.5px; margin: 0; }
+
+header.top {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; margin-bottom: 18px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.brand .tag {
+  font-size: 11.5px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--muted); font-weight: 500;
+}
+
+/* ---------- cards ---------- */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 17px 16px;
+  margin-bottom: 14px;
+}
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 13px; flex-wrap: wrap; }
+
+/* ---------- controls ---------- */
+label.field { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--text-secondary); font-weight: 400; }
+input, select, textarea, button { font: inherit; font-family: var(--sans); color: inherit; }
+input[type="date"], input[type="text"], input[type="number"], select, textarea {
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 11px;
+  color: var(--text-primary);
+  width: 100%; min-width: 0;
+  font-size: 15px;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--series-1); }
+button {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 13px; cursor: pointer;
+  font-weight: 500; font-size: 14px; min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+button:hover { background: var(--ghost); }
+button:active { background: rgba(233,233,237,0.12); }
+button.primary { background: transparent; border-color: var(--series-1); color: var(--series-1); }
+button.primary:hover { background: rgba(145,132,217,0.12); filter: none; }
+button.primary:active { background: rgba(145,132,217,0.22); }
+button.ghost { background: transparent; border-color: var(--border); }
+button.icon { padding: 8px 10px; min-height: 40px; font-size: 12.5px; color: var(--text-secondary); border-color: transparent; }
+button.icon:hover { background: var(--ghost); }
+button.danger { background: transparent; border-color: var(--critical); color: var(--critical); }
+button.danger:hover { background: rgba(231,229,254,0.1); filter: none; }
+#btnTheme { display: none; }      /* Nocturne is a single dark theme */
+.row { display: grid; gap: 11px; }
+.setup-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.log-grid   { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); align-items: end; }
+
+/* ---------- hero + stat tiles ---------- */
+.hero-wrap { display: grid; grid-template-columns: minmax(230px, 1fr) 2fr; gap: 14px; align-items: stretch; }
+@media (max-width: 860px) { .hero-wrap { grid-template-columns: 1fr; } }
+
+.hero { display: flex; flex-direction: column; justify-content: center; }
+.hero .figure { font-size: clamp(46px, 15vw, 62px); font-weight: 500; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.hero .figure.small { font-size: 34px; }
+.hero .figure-label { color: var(--text-secondary); font-size: 13px; margin-top: 10px; }
+.hero .race-name { color: var(--series-1); font-size: 13px; font-weight: 500; margin-top: 6px; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; align-content: start; }
+.kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 14px; }
+.kpi .k-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; }
+.kpi .k-value { font-size: 25px; font-weight: 500; letter-spacing: -0.02em; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.kpi .k-note  { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+.pos { color: var(--warning); }
+.neg { color: var(--text-secondary); }
+
+/* ---------- charts ---------- */
+.chart-box { position: relative; }
+svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; font-size: 12px; color: var(--text-secondary); }
+.legend .item { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 11px; height: 3px; border-radius: 2px; display: inline-block; }
+.tooltip {
+  position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s;
+  background: #262a3d; border: 1px solid #5d5294;
+  border-radius: var(--radius); padding: 9px 11px; font-size: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.55); z-index: 5; min-width: 132px;
+}
+.tooltip .tt-title { font-weight: 500; margin-bottom: 5px; }
+.tooltip .tt-row { display: flex; justify-content: space-between; gap: 14px; color: var(--text-secondary); }
+.tooltip .tt-row b { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* ---------- tables ---------- */
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: left; padding: 11px 10px; border-bottom: 1px solid rgba(233,233,237,0.08); }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 500; white-space: nowrap; border-bottom-color: var(--border); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: var(--ghost); }
+.table-scroll { overflow-x: auto; }
+.empty { color: var(--muted); padding: 26px 4px; text-align: center; font-size: 13px; }
+
+/* meter */
+.meter { display: block; width: 100%; max-width: 150px; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.meter > span { display: block; height: 100%; border-radius: 3px; background: var(--series-1); }
+.meter.warn > span { background: var(--warning); }
+.meter.crit > span { background: var(--critical); }
+
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 400; white-space: nowrap; }
+.status .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.foot-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.hidden { display: none !important; }
+.profile-bar {
+  display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
+}
+.profile-pick { min-width: 200px; flex: 1 1 200px; }
+.profile-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.profile-warn { font-size: 13px; color: var(--text-secondary); align-self: center; }
+.conn {
+  font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); border: 1px solid var(--border); border-radius: 20px;
+  padding: 4px 10px; align-self: center; white-space: nowrap;
+}
+.conn.live { color: var(--series-1); border-color: currentColor; }
+.conn.warn { color: var(--critical); border-color: currentColor; text-transform: none;
+  letter-spacing: 0; font-weight: 400; white-space: normal; }
+
+/* read-only: viewing an athlete that isn't yours */
+.banner.lock { border-left-color: var(--series-1); display: flex; gap: 12px;
+  align-items: center; flex-wrap: wrap; }
+.banner.lock .grow { flex: 1 1 240px; }
+body.readonly [data-del] { display: none; }
+body.readonly input:disabled,
+body.readonly select:disabled,
+body.readonly textarea:disabled { opacity: .45; cursor: not-allowed; }
+body.readonly button:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+body.readonly button:disabled:hover { background: transparent; }
+body.readonly button.primary:disabled:hover { background: transparent; }
+body.readonly .session .tick { opacity: .5; }
+
+/* ---------- view tabs → bottom bar on phones ---------- */
+nav.tabs { display: flex; gap: 6px; }
+nav.tabs a, nav.tabs button.tab {
+  background: transparent; border: 1px solid transparent; color: var(--text-secondary);
+  font-weight: 500; padding: 9px 14px; border-radius: var(--radius); font-size: 13.5px;
+  cursor: pointer; text-decoration: none; min-height: 44px;
+}
+nav.tabs a:hover, nav.tabs button.tab:hover { background: var(--ghost); }
+nav.tabs a[aria-current="page"], nav.tabs button.tab[aria-current="page"] {
+  background: rgba(145,132,217,0.14); border-color: var(--series-1); color: #d2cefd;
+}
+@media (max-width: 760px) {
+  header.top { align-items: flex-start; }
+  header.top .actions { order: 3; }
+  nav.tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; gap: 4px;
+    background: rgba(22,24,38,0.94); backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 0 rgba(233,233,237,0.12);
+    padding: 7px 7px calc(7px + env(safe-area-inset-bottom));
+  }
+  nav.tabs button.tab { flex: 1; text-align: center; min-height: 52px; }
+}
+
+.banner {
+  border: 1px solid var(--border); border-left: 3px solid var(--series-1);
+  background: var(--surface-1); border-radius: var(--radius); padding: 12px 14px;
+  font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;
+}
+
+.phase-bar { display: flex; gap: 3px; margin: 14px 0 9px; }
+.phase-seg { height: 10px; border-radius: 3px; flex: 1 1 auto; background: var(--axis); }
+.phase-seg.done { background: #5d5294; }
+.phase-seg.now  { background: var(--series-1); }
+.phase-key { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); }
+.phase-key b { color: var(--text-primary); font-weight: 500; }
+
+.sessions { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 11px; }
+.session {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 15px; background: var(--surface-1);
+}
+.session.rest { background: #1b1d2c; border-style: dashed; }
+.session.done { border-color: #5d5294; background: #1e2030; }
+.session h3 { margin: 0 0 2px; font-size: 15.5px; font-weight: 500; letter-spacing: -0.01em; }
+.session .when { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 500; }
+.session ul { margin: 10px 0 0; padding-left: 16px; color: var(--text-secondary); font-size: 12.5px; }
+.session li { margin-bottom: 5px; }
+.session li::marker { color: var(--context); }
+.session li b { color: var(--text-primary); font-weight: 500; }
+.session .tick { display: flex; align-items: center; gap: 9px; margin-top: 12px; min-height: 44px; font-size: 12.5px; color: var(--text-secondary); cursor: pointer; }
+.session .tick input { width: auto; accent-color: var(--series-1); }
+
+.wk { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; background: var(--surface-1); }
+.wk > summary {
+  cursor: pointer; padding: 13px 14px; display: flex; gap: 11px; align-items: center;
+  flex-wrap: wrap; font-size: 13.5px; list-style: none; min-height: 52px;
+}
+.wk > summary::-webkit-details-marker { display: none; }
+.wk > summary:hover { background: var(--ghost); }
+.wk[open] > summary { border-bottom: 1px solid var(--border); }
+.wk .wk-n { font-weight: 500; min-width: 62px; }
+.wk .wk-phase { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 500; min-width: 84px; }
+.wk .wk-meta { color: var(--text-secondary); margin-left: auto; font-variant-numeric: tabular-nums; }
+.wk .wk-body { padding: 14px; }
+.pill {
+  display: inline-block; font-size: 10.5px; font-weight: 500; letter-spacing: .07em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 20px;
+  border: 1px solid var(--border); color: var(--text-secondary);
+}
+.pill.now { background: rgba(145,132,217,0.14); border-color: var(--series-1); color: #d2cefd; }
+.pill.sim { border-color: var(--warning); color: var(--warning); }
+.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.src { font-size: 12.5px; color: var(--text-secondary); }
+.src a { color: var(--series-1); }
+.src li { margin-bottom: 4px; }
+</style>
+<meta name="theme-color" content="#161826">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hyrox Prep">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <h1>Hyrox Prep</h1>
+    </div>
+    <nav class="tabs">
+      <button type="button" class="tab" data-view="tracker">Mile tracker</button>
+      <button type="button" class="tab" data-view="training">Training plan</button>
+    </nav>
+    <div class="actions">
+      <button id="btnExport" class="ghost">Export JSON</button>
+      <button id="btnImport" class="ghost">Import</button>
+      <input type="file" id="fileImport" accept="application/json" class="hidden">
+      <button id="btnTheme" class="ghost" aria-label="Toggle colour theme">Theme</button>
+    </div>
+  </header>
+
+  <div class="profile-bar" id="profileBar"></div>
+
+  <div id="lockBanner" class="banner lock hidden"></div>
+
+  <div id="viewTracker">
+<div id="setupBanner" class="banner hidden">
+    Set your race date below to start the countdown.
+  </div>
+
+  <!-- ===== race setup ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Race &amp; goal</h2>
+        <p class="sub">Everything else is measured against these.</p>
+      </div>
+    </div>
+    <div class="row setup-grid">
+      <label class="field">Race name
+        <input type="text" id="raceName" placeholder="e.g. Hyrox Dallas">
+      </label>
+      <label class="field">Race date
+        <input type="date" id="raceDate">
+      </label>
+      <label class="field">Plan start
+        <input type="date" id="planStart">
+      </label>
+      <label class="field">Daily minimum (mi)
+        <input type="number" id="dailyGoal" min="0.1" step="0.1" value="1">
+      </label>
+      <label class="field">Retire shoes at (mi)
+        <input type="number" id="shoeLimit" min="50" step="10" value="400">
+      </label>
+    </div>
+  </section>
+
+  <!-- ===== countdown + KPIs ===== -->
+  <section class="hero-wrap" style="margin-bottom:16px;">
+    <div class="card hero">
+      <div class="figure" id="heroDays">—</div>
+      <div class="figure-label" id="heroLabel">days until race day</div>
+      <div class="race-name" id="heroRace"></div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <!-- ===== log a run ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Log a run</h2>
+        <p class="sub">Leave time blank if you didn't clock it — pace is worked out from distance and time.</p>
+      </div>
+    </div>
+    <form id="logForm">
+      <div class="row log-grid">
+        <label class="field">Date
+          <input type="date" id="fDate" required>
+        </label>
+        <label class="field">Distance (mi)
+          <input type="number" id="fMiles" min="0.01" step="0.01" placeholder="1.00" required>
+        </label>
+        <label class="field">Time (mm:ss)
+          <input type="text" id="fTime" placeholder="9:45" inputmode="numeric" pattern="^\s*\d{1,2}(:\d{1,2}){0,2}\s*$">
+        </label>
+        <label class="field">Shoes
+          <input type="text" id="fShoes" list="shoeList" placeholder="e.g. Endorphin Speed 4">
+          <datalist id="shoeList"></datalist>
+        </label>
+        <label class="field">Notes
+          <input type="text" id="fNotes" placeholder="optional">
+        </label>
+        <button type="submit" class="primary" style="height:34px;">Add run</button>
+      </div>
+    </form>
+    <p class="foot-note" id="formHint"></p>
+  </section>
+
+  <!-- ===== cumulative chart ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Miles banked vs. required</h2>
+        <p class="sub">Your running total against the flat <span id="goalEcho">1 mi</span>/day line. Above the grey line means miles in the bank.</p>
+      </div>
+      <button class="icon" data-toggle="tblCum">Table view</button>
+    </div>
+    <div class="legend">
+      <span class="item"><i class="swatch" style="background:var(--series-1)"></i> Miles logged</span>
+      <span class="item"><i class="swatch" style="background:var(--context)"></i> Required minimum</span>
+    </div>
+    <div class="chart-box">
+      <svg id="chartCum" class="chart" role="img" aria-label="Cumulative miles logged compared with the required minimum"></svg>
+      <div class="tooltip" id="ttCum"></div>
+    </div>
+    <div id="tblCum" class="table-scroll hidden" style="margin-top:14px;"></div>
+  </section>
+
+  <!-- ===== daily chart ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Daily miles</h2>
+        <p class="sub">Last 30 days. Anything reaching the goal line cleared the minimum.</p>
+      </div>
+      <button class="icon" data-toggle="tblDaily">Table view</button>
+    </div>
+    <div class="chart-box">
+      <svg id="chartDaily" class="chart" role="img" aria-label="Miles run each day over the last 30 days"></svg>
+      <div class="tooltip" id="ttDaily"></div>
+    </div>
+    <div id="tblDaily" class="table-scroll hidden" style="margin-top:14px;"></div>
+  </section>
+
+  <!-- ===== shoes ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Shoe mileage</h2>
+        <p class="sub">Rotation totals, with wear measured against your retirement threshold.</p>
+      </div>
+    </div>
+    <div class="table-scroll" id="shoeTable"></div>
+  </section>
+
+  <!-- ===== run log ===== -->
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Run log</h2>
+        <p class="sub" id="logCount"></p>
+      </div>
+    </div>
+    <div class="table-scroll" id="runTable"></div>
+  </section>
+
+  <p class="foot-note">
+    Saved in this browser only. Use <b>Export JSON</b> to move your log to another device —
+    the OneDrive copy of this file syncs the app, not the data.
+  </p>
+  </div>
+
+  <div id="viewTraining" class="hidden">
+<div id="noRace" class="banner hidden">
+    Set a race date to generate the plan — the phases are counted backwards from race day.
+  </div>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Plan setup</h2>
+        <p class="sub">Division sets every load in the plan. Race date sets its length. These are per athlete and shared with the mile tracker.</p>
+      </div>
+    </div>
+    <div class="row setup-grid">
+      <label class="field">Division
+        <select id="division"></select>
+      </label>
+      <label class="field">Race date
+        <input type="date" id="trRaceDate">
+      </label>
+      <label class="field">Training days / week
+        <select id="daysWk">
+          <option value="4">4 days</option>
+          <option value="5" selected>5 days</option>
+          <option value="6">6 days</option>
+        </select>
+      </label>
+      <label class="field">Running base
+        <select id="runBase">
+          <option value="low">Building from low</option>
+          <option value="mod">Moderate (10–20 mi/wk)</option>
+          <option value="high">Strong (20+ mi/wk)</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Where you are</h2>
+        <p class="sub" id="planSummary"></p>
+      </div>
+    </div>
+    <div class="phase-bar" id="phaseBar"></div>
+    <div class="phase-key" id="phaseKey"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 id="thisWeekTitle">This week</h2>
+        <p class="sub" id="thisWeekSub"></p>
+      </div>
+    </div>
+    <div class="sessions" id="thisWeek"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Full plan</h2>
+        <p class="sub">Every week from here to race day. Open one to see its sessions.</p>
+      </div>
+    </div>
+    <div id="allWeeks"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Run pace targets</h2>
+        <p class="sub">Run a hard-but-sustainable 15–20 min time trial, enter it here, and the plan's race pace is set from it.</p>
+      </div>
+    </div>
+    <div class="row setup-grid">
+      <label class="field">Time trial distance (mi)
+        <input type="number" id="ttDist" step="0.01" min="0.5" placeholder="2.20">
+      </label>
+      <label class="field">Time trial time (mm:ss)
+        <input type="text" id="ttTime" placeholder="16:00">
+      </label>
+    </div>
+    <div id="paceOut" style="margin-top:14px;"></div>
+  </section>
+
+  <section class="two-col">
+    <div class="card">
+      <div class="card-head"><div>
+        <h2>Your station loads</h2>
+        <p class="sub" id="loadSub"></p>
+      </div></div>
+      <div class="table-scroll" id="loadTable"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div>
+        <h2>Benchmark splits</h2>
+        <p class="sub">Published elite / average splits. The gap between them is where the time is.</p>
+      </div></div>
+      <div class="table-scroll" id="benchTable"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><div>
+      <h2>What this plan is built on</h2>
+      <p class="sub">Where the structure came from, and the judgement calls behind it.</p>
+    </div></div>
+    <div id="rationale" class="src"></div>
+  </section>
+  </div>
+
+</div>
+
+<script>
+/* Hyrox Prep — store, athlete roster, division standards and helpers.
+   Runs on two backends, chosen at load:
+     - shared : the artifact's database, when published (all viewers, all devices)
+     - local  : localStorage, when the file is opened directly
+   One document per athlete, so six people logging at the same time never
+   write the same record. Which athlete YOU have selected, and your theme,
+   are per-viewer and always stay local. */
+(function (global) {
+  "use strict";
+
+  var KEY    = "hyroxPrep.v2";       // local-mode roster
+  var PREFS  = "hyroxPrep.prefs";    // per-viewer, both modes
+  var LEGACY = "hyroxPrep.v1";
+
+  var DIVISIONS = {
+    "open-men": {
+      label: "Open — Men", short: "Open M", loadKey: "men-open",
+      effort: "half-marathon effort — about 7 out of 10, the pace you could hold for an hour", solo: true
+    },
+    "open-women": {
+      label: "Open — Women", short: "Open W", loadKey: "women-open",
+      effort: "half-marathon effort — about 7 out of 10, the pace you could hold for an hour", solo: true
+    },
+    "pro-men": {
+      label: "Pro — Men", short: "Pro M", loadKey: "men-pro",
+      effort: "half-marathon effort — about 7 out of 10, the pace you could hold for an hour", solo: true
+    },
+    "pro-women": {
+      label: "Pro — Women", short: "Pro W", loadKey: "women-pro",
+      effort: "half-marathon effort — about 7 out of 10, the pace you could hold for an hour", solo: true
+    },
+    "doubles-men": {
+      label: "Doubles — Men", short: "Dbl M", loadKey: "men-open",
+      effort: "10k effort — you still run all 8 km, but with the stations split you can push the runs a little harder", solo: false
+    },
+    "doubles-women": {
+      label: "Doubles — Women", short: "Dbl W", loadKey: "women-open",
+      effort: "10k effort — you still run all 8 km, but with the stations split you can push the runs a little harder", solo: false
+    },
+    "doubles-mixed": {
+      label: "Doubles — Mixed", short: "Dbl X", loadKey: "men-open",
+      effort: "10k effort — you still run all 8 km, but with the stations split you can push the runs a little harder", solo: false
+    }
+  };
+
+  var LOADS = {
+    "men-open":   { push: "152 kg", pull: "103 kg", carry: "2 × 24 kg", lunge: "20 kg", ball: "6 kg → 10 ft" },
+    "women-open": { push: "102 kg", pull: "78 kg",  carry: "2 × 16 kg", lunge: "10 kg", ball: "4 kg → 9 ft" },
+    "men-pro":    { push: "175 kg", pull: "125 kg", carry: "2 × 32 kg", lunge: "30 kg", ball: "9 kg → 10 ft" },
+    "women-pro":  { push: "125 kg", pull: "100 kg", carry: "2 × 24 kg", lunge: "20 kg", ball: "6 kg → 9 ft" }
+  };
+
+  var STATIONS = [
+    { n: 1, name: "SkiErg",             spec: "1000 m",  load: null },
+    { n: 2, name: "Sled Push",          spec: "50 m",    load: "push" },
+    { n: 3, name: "Sled Pull",          spec: "50 m",    load: "pull" },
+    { n: 4, name: "Burpee Broad Jumps", spec: "80 m",    load: null },
+    { n: 5, name: "Row",                spec: "1000 m",  load: null },
+    { n: 6, name: "Farmers Carry",      spec: "200 m",   load: "carry" },
+    { n: 7, name: "Sandbag Lunges",     spec: "100 m",   load: "lunge" },
+    { n: 8, name: "Wall Balls",         spec: "100 reps", load: "ball" }
+  ];
+
+  /* Published elite vs. average splits, used as target bands. */
+  var BENCH = {
+    men: {
+      race: "58:50 / 1:29:14", run8k: "30:46 / 42:26", ski: "3:47 / 4:17",
+      push: "2:45 / 3:40", pull: "3:14 / 6:31", burpee: "2:21 / 5:15",
+      row: "3:58 / 4:35", balls: "4:25 / 7:38", rox: "2:54 / 6:58"
+    },
+    women: {
+      race: "1:06:22 / 1:30:11", run8k: "34:27 / 44:09", ski: "4:12 / 4:51",
+      push: "3:00 / 3:48", pull: "3:54 / 6:36", burpee: "3:11 / 4:53",
+      row: "—", balls: "3:50 / 6:20", rox: "3:47 / 6:12"
+    }
+  };
+
+  /* ============ helpers ============ */
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function toISO(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parseISO(s) { var p = String(s).split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function todayISO() { return toISO(new Date()); }
+  function addDays(iso, n) { var d = parseISO(iso); d.setDate(d.getDate() + n); return toISO(d); }
+  function dayDiff(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+  function fmtShort(iso) { return parseISO(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
+  function fmtLong(iso) { return parseISO(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" }); }
+  function mi(n) { return (Math.round(n * 100) / 100).toFixed(2); }
+  function signed(n) { return (n >= 0 ? "+" : "−") + mi(Math.abs(n)); }
+  function trimNum(n) { return mi(n).replace(/\.?0+$/, ""); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function parseTime(str) {
+    if (!str) return null;
+    var parts = String(str).trim().split(":").map(Number);
+    if (parts.some(function (n) { return !isFinite(n) || n < 0; })) return null;
+    if (parts.length === 1) return Math.round(parts[0] * 60);
+    if (parts.length === 2) return Math.round(parts[0] * 60 + parts[1]);
+    if (parts.length === 3) return Math.round(parts[0] * 3600 + parts[1] * 60 + parts[2]);
+    return null;
+  }
+  function fmtDur(sec) {
+    if (sec == null) return "—";
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.round(sec % 60);
+    return h > 0 ? h + ":" + pad(m) + ":" + pad(s) : m + ":" + pad(s);
+  }
+  function fmtPace(sec, miles) {
+    if (sec == null || !miles) return "—";
+    var p = sec / miles;
+    if (!isFinite(p) || p <= 0) return "—";
+    return Math.floor(p / 60) + ":" + pad(Math.round(p % 60));
+  }
+
+  /* ============ helpers ============ */
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function toISO(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parseISO(s) { var p = String(s).split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function todayISO() { return toISO(new Date()); }
+  function addDays(iso, n) { var d = parseISO(iso); d.setDate(d.getDate() + n); return toISO(d); }
+  function dayDiff(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+  function fmtShort(iso) { return parseISO(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
+  function fmtLong(iso) { return parseISO(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" }); }
+  function mi(n) { return (Math.round(n * 100) / 100).toFixed(2); }
+  function signed(n) { return (n >= 0 ? "+" : "\u2212") + mi(Math.abs(n)); }
+  function trimNum(n) { return mi(n).replace(/\.?0+$/, ""); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function parseTime(str) {
+    if (!str) return null;
+    var parts = String(str).trim().split(":").map(Number);
+    if (parts.some(function (n) { return !isFinite(n) || n < 0; })) return null;
+    if (parts.length === 1) return Math.round(parts[0] * 60);
+    if (parts.length === 2) return Math.round(parts[0] * 60 + parts[1]);
+    if (parts.length === 3) return Math.round(parts[0] * 3600 + parts[1] * 60 + parts[2]);
+    return null;
+  }
+  function fmtDur(sec) {
+    if (sec == null) return "\u2014";
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.round(sec % 60);
+    return h > 0 ? h + ":" + pad(m) + ":" + pad(s) : m + ":" + pad(s);
+  }
+  function fmtPace(sec, miles) {
+    if (sec == null || !miles) return "\u2014";
+    var p = sec / miles;
+    if (!isFinite(p) || p <= 0) return "\u2014";
+    return Math.floor(p / 60) + ":" + pad(Math.round(p % 60));
+  }
+
+  /* ============ shape ============ */
+  function newId() { return "a" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36); }
+  function blankProfile(name, id) {
+    return {
+      id: id || newId(), name: name || "Athlete", division: "open-men",
+      raceName: "", raceDate: "", planStart: "", dailyGoal: 1, shoeLimit: 400,
+      daysPerWeek: 5, runBase: "low", ttDist: 0, ttSec: null,
+      runs: [], done: {}
+    };
+  }
+  function normalize(id, v) {
+    var p = blankProfile(v && v.name, id);
+    if (v) Object.keys(p).forEach(function (k) { if (v[k] !== undefined && k !== "id") p[k] = v[k]; });
+    if (!Array.isArray(p.runs)) p.runs = [];
+    if (!p.done || typeof p.done !== "object") p.done = {};
+    if (!DIVISIONS[p.division]) p.division = "open-men";
+    return p;
+  }
+  // what actually goes in a document — never the client-side id
+  function body(p) {
+    var o = {};
+    Object.keys(p).forEach(function (k) { if (k !== "id") o[k] = p[k]; });
+    return o;
+  }
+
+  var PLACEHOLDER = blankProfile("\u2014", "");
+  var state = { profiles: {}, activeProfile: "", ownedId: "", theme: "", view: "tracker" };
+  var mode = "local", db = null, ready = false, lastError = "";
+
+  /* ============ per-viewer preferences (never shared) ============ */
+  function loadPrefs() {
+    try {
+      var r = JSON.parse(localStorage.getItem(PREFS) || "{}");
+      state.activeProfile = r.activeProfile || "";
+      state.ownedId = r.ownedId || "";
+      state.theme = r.theme || "";
+      state.view = r.view || "tracker";
+    } catch (e) {}
+  }
+  function savePrefs() {
+    try {
+      localStorage.setItem(PREFS, JSON.stringify({
+        activeProfile: state.activeProfile, ownedId: state.ownedId,
+        theme: state.theme, view: state.view
+      }));
+    } catch (e) {}
+  }
+
+  /* ============ local backend ============ */
+  function loadLocal() {
+    var s = null;
+    try { var raw = localStorage.getItem(KEY); if (raw) s = JSON.parse(raw); } catch (e) {}
+    if (s && s.profiles) {
+      Object.keys(s.profiles).forEach(function (id) { state.profiles[id] = normalize(id, s.profiles[id]); });
+      if (!state.activeProfile && s.activeProfile) state.activeProfile = s.activeProfile;
+    } else {
+      var old = null;
+      try { var r1 = localStorage.getItem(LEGACY); if (r1) old = JSON.parse(r1); } catch (e) {}
+      var p = blankProfile(old ? "Athlete 1" : "Me");
+      if (old) { Object.keys(p).forEach(function (k) { if (old[k] !== undefined && k !== "id") p[k] = old[k]; }); }
+      state.profiles[p.id] = normalize(p.id, p);
+      state.activeProfile = p.id;
+    }
+    if (!state.profiles[state.activeProfile]) state.activeProfile = Object.keys(state.profiles)[0] || "";
+    ready = true;
+  }
+  function saveLocal() {
+    try { localStorage.setItem(KEY, JSON.stringify({ version: 2, profiles: state.profiles })); }
+    catch (e) { lastError = "Could not save to this browser."; }
+  }
+
+  /* ============ shared backend ============ */
+  var pending = null;
+  function saveShared() {
+    var p = active(); if (!p || !p.id || !db) return;
+    clearTimeout(pending);                       // batch rapid edits into one write
+    pending = setTimeout(function () {
+      db.doc("athletes/" + p.id).set(body(p)).catch(function (e) {
+        lastError = e && e.code === "quota_exceeded"
+          ? "The shared store is full \u2014 delete some old runs."
+          : "Couldn't save to the shared store. Your change is still on screen; try again.";
+        emit();
+      });
+    }, 180);
+  }
+
+  function connect(done) {
+    var use = (global.claude && global.claude.use) ? global.claude.use("db") : null;
+    if (!use) { loadLocal(); done(); return; }
+    var settled = false;
+    use.then(function (d) {
+      if (!d) { loadLocal(); settled = true; done(); return; }
+      db = d; mode = "shared";
+      d.collection("athletes").onSnapshot(function (snap) {
+        var next = {};
+        snap.docs.forEach(function (doc) { next[doc.id] = normalize(doc.id, doc.data()); });
+        state.profiles = next;
+        if (!state.profiles[state.activeProfile]) {
+          state.activeProfile = Object.keys(next)[0] || "";
+          savePrefs();
+        }
+        ready = true; lastError = "";
+        if (!settled) { settled = true; done(); }
+        emit();
+      }, function (e) {
+        lastError = e && e.code === "revoked"
+          ? "Your access to the shared store was removed."
+          : "Lost the connection to the shared store.";
+        ready = true;
+        if (!settled) { settled = true; done(); }
+        emit();
+      });
+    }).catch(function () { loadLocal(); if (!settled) { settled = true; done(); } });
+  }
+
+  /* ============ public store ============ */
+  function active() { return state.profiles[state.activeProfile] || PLACEHOLDER; }
+
+  /* Ownership. Each viewer claims one athlete on their own device; every other
+     athlete is read-only for them. This is a guard against people editing each
+     other's logs by accident, not a security boundary — enforcing that
+     server-side needs viewer identity, which this deployment doesn't have. */
+  function owned() { return state.profiles[state.ownedId] || null; }
+  function claim(id) { state.ownedId = id || ""; savePrefs(); }
+  function canEdit() {
+    if (mode !== "shared") return true;              // local file: your own browser
+    if (!state.ownedId) return false;                // nobody claimed yet
+    return state.activeProfile === state.ownedId;
+  }
+  function save() {
+    savePrefs();
+    if (!canEdit()) return;                          // never write someone else's log
+    if (mode === "shared") saveShared(); else saveLocal();
+  }
+
+  function addAthlete(name) {
+    var p = blankProfile(name);
+    state.profiles[p.id] = p;
+    state.activeProfile = p.id;
+    if (mode !== "shared" || !state.ownedId) state.ownedId = p.id;
+    savePrefs();
+    if (mode === "shared" && db) {
+      db.doc("athletes/" + p.id).set(body(p)).catch(function () {
+        lastError = "Couldn't create that athlete in the shared store.";
+        emit();
+      });
+    } else saveLocal();
+    return p;
+  }
+  function removeAthlete(id) {
+    delete state.profiles[id];
+    if (state.activeProfile === id) state.activeProfile = Object.keys(state.profiles)[0] || "";
+    savePrefs();
+    if (mode === "shared" && db) db.doc("athletes/" + id).delete().catch(function () {});
+    else saveLocal();
+  }
+  function replaceAll(profiles) {          // used by Import
+    Object.keys(profiles).forEach(function (id) {
+      var p = normalize(id, profiles[id]);
+      state.profiles[id] = p;
+      if (mode === "shared" && db) db.doc("athletes/" + id).set(body(p)).catch(function () {});
+    });
+    if (mode !== "shared") saveLocal();
+    if (!state.profiles[state.activeProfile]) state.activeProfile = Object.keys(state.profiles)[0] || "";
+    savePrefs();
+  }
+
+  function init(done) { loadPrefs(); connect(done || function () {}); }
+  function status() {
+    var n = Object.keys(state.profiles).length;
+    return { mode: mode, ready: ready, count: n, error: lastError };
+  }
+
+  /* ============ theme ============ */
+  function applyTheme() {
+    if (state.theme) document.documentElement.setAttribute("data-theme", state.theme);
+    else document.documentElement.removeAttribute("data-theme");
+  }
+  function cycleTheme() {
+    state.theme = state.theme === "dark" ? "light" : state.theme === "light" ? "" : "dark";
+    applyTheme(); savePrefs();
+  }
+
+  var subs = [];
+  function onChange(fn) { subs.push(fn); }
+  function emit() { subs.forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); }
+
+  /* ============ athlete bar ============ */
+  function mountProfileBar(el, notify) {
+    var mode2 = "idle";
+
+    function paint() {
+      var ids = Object.keys(state.profiles), cur = active(), html;
+      var st = status();
+
+      if (!ids.length && mode2 === "idle") mode2 = "add";
+
+      if (mode2 === "add" || mode2 === "rename") {
+        html = '<label class="field profile-pick">' + (mode2 === "add" ? "Athlete name" : "Rename athlete") +
+          '<input type="text" id="hpName" autocomplete="off" placeholder="Name" value="' +
+          esc(mode2 === "rename" ? cur.name : "") + '"></label>' +
+          '<div class="profile-actions">' +
+          '<button type="button" id="hpSave" class="primary">Save</button>' +
+          (ids.length ? '<button type="button" id="hpCancel" class="ghost">Cancel</button>' : "") +
+          "</div>";
+      } else if (mode2 === "remove") {
+        html = '<div class="profile-warn">Remove <b>' + esc(cur.name) +
+          "</b> and everything logged for them? This can't be undone" +
+          (st.mode === "shared" ? ", and it removes them for everyone." : ".") + "</div>" +
+          '<div class="profile-actions">' +
+          '<button type="button" id="hpYes" class="danger">Remove</button>' +
+          '<button type="button" id="hpCancel" class="ghost">Cancel</button></div>';
+      } else {
+        html = '<label class="field profile-pick">Athlete<select id="hpProfile">' +
+          ids.map(function (id) {
+            var p = state.profiles[id];
+            return '<option value="' + esc(id) + '"' + (id === state.activeProfile ? " selected" : "") +
+              ">" + esc(p.name) + " \u00b7 " + esc(DIVISIONS[p.division].short) + "</option>";
+          }).join("") + "</select></label>" +
+          '<div class="profile-actions">' +
+          (st.mode === "shared" && !state.ownedId
+            ? '<button type="button" id="hpClaim" class="primary">This is me</button>'
+            : "") +
+          (st.mode === "shared" && state.ownedId && state.activeProfile !== state.ownedId
+            ? '<button type="button" id="hpMine" class="ghost">Go to my log</button>'
+            : "") +
+          '<button type="button" id="hpAdd" class="ghost">Add athlete</button>' +
+          (canEdit() ? '<button type="button" id="hpRename" class="ghost">Rename</button>' : "") +
+          (canEdit() && ids.length > 1 ? '<button type="button" id="hpDel" class="ghost">Remove</button>' : "") +
+          "</div>";
+      }
+
+      var badge = st.error
+        ? '<span class="conn warn" title="' + esc(st.error) + '">' + esc(st.error) + "</span>"
+        : st.mode === "shared"
+          ? '<span class="conn live">Shared \u00b7 ' + st.count + " athlete" + (st.count === 1 ? "" : "s") + "</span>"
+          : '<span class="conn">This browser only</span>';
+
+      el.innerHTML = html + badge;
+      var $ = function (id) { return el.querySelector("#" + id); };
+
+      if (mode2 === "idle") {
+        $("hpProfile").addEventListener("change", function (e) {
+          state.activeProfile = e.target.value; savePrefs(); paint(); notify();
+        });
+        $("hpAdd").addEventListener("click", function () { mode2 = "add"; paint(); focusName(); });
+        if ($("hpRename")) $("hpRename").addEventListener("click", function () { mode2 = "rename"; paint(); focusName(); });
+        if ($("hpDel")) $("hpDel").addEventListener("click", function () { mode2 = "remove"; paint(); });
+        if ($("hpClaim")) $("hpClaim").addEventListener("click", function () {
+          claim(state.activeProfile); paint(); notify();
+        });
+        if ($("hpMine")) $("hpMine").addEventListener("click", function () {
+          state.activeProfile = state.ownedId; savePrefs(); paint(); notify();
+        });
+      } else if (mode2 === "remove") {
+        $("hpYes").addEventListener("click", function () {
+          if (!canEdit()) { mode2 = "idle"; paint(); return; }
+          var gone = state.activeProfile;
+          removeAthlete(gone);
+          if (state.ownedId === gone) claim("");
+          mode2 = "idle"; paint(); notify();
+        });
+        $("hpCancel").addEventListener("click", function () { mode2 = "idle"; paint(); });
+      } else {
+        var commit = function () {
+          var name = $("hpName").value.trim();
+          if (!name) { $("hpName").focus(); return; }
+          if (mode2 === "add") addAthlete(name);
+          else if (canEdit()) { cur.name = name; save(); }
+          mode2 = "idle"; paint(); notify();
+        };
+        $("hpSave").addEventListener("click", commit);
+        if ($("hpCancel")) $("hpCancel").addEventListener("click", function () { mode2 = "idle"; paint(); });
+        $("hpName").addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          else if (e.key === "Escape" && ids.length) { mode2 = "idle"; paint(); }
+        });
+      }
+    }
+    function focusName() { var i = el.querySelector("#hpName"); if (i) { i.focus(); i.select(); } }
+    onChange(paint);
+    paint();
+  }
+
+  global.HP = {
+    onChange: onChange, emit: emit,
+    KEY: KEY, DIVISIONS: DIVISIONS, LOADS: LOADS, STATIONS: STATIONS, BENCH: BENCH,
+    init: init, save: save, active: active, status: status,
+    owned: owned, claim: claim, canEdit: canEdit,
+    blankProfile: blankProfile, addAthlete: addAthlete, removeAthlete: removeAthlete,
+    replaceAll: replaceAll, savePrefs: savePrefs,
+    applyTheme: applyTheme, cycleTheme: cycleTheme, mountProfileBar: mountProfileBar,
+    get state() { return state; },
+    pad: pad, toISO: toISO, parseISO: parseISO, todayISO: todayISO, addDays: addDays,
+    dayDiff: dayDiff, fmtShort: fmtShort, fmtLong: fmtLong, mi: mi, signed: signed,
+    trimNum: trimNum, esc: esc, parseTime: parseTime, fmtDur: fmtDur, fmtPace: fmtPace
+  };
+})(window);
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ============ state — the shared store lives in shared.js ============ */
+  var state = HP.active();              // `state` is the ACTIVE ATHLETE's record
+  function reseat() { state = HP.active(); }
+  function save() { HP.save(); }
+
+  /* ============ helpers (shared.js) ============ */
+  var pad = HP.pad, toISO = HP.toISO, parseISO = HP.parseISO, todayISO = HP.todayISO,
+      addDays = HP.addDays, dayDiff = HP.dayDiff, fmtShort = HP.fmtShort, fmtLong = HP.fmtLong,
+      parseTime = HP.parseTime, fmtDur = HP.fmtDur, fmtPace = HP.fmtPace,
+      mi = HP.mi, signed = HP.signed, esc = HP.esc;
+
+  /* =================== derived =================== */
+  function goal() { return Number(state.dailyGoal) > 0 ? Number(state.dailyGoal) : 1; }
+
+  function byDay() {
+    var map = {};
+    state.runs.forEach(function (r) {
+      if (!map[r.date]) map[r.date] = { date: r.date, miles: 0, seconds: 0, timed: 0, runs: 0, shoes: [] };
+      var d = map[r.date];
+      d.miles += Number(r.miles) || 0;
+      d.runs += 1;
+      if (r.seconds != null) { d.seconds += r.seconds; d.timed += Number(r.miles) || 0; }
+      if (r.shoes && d.shoes.indexOf(r.shoes) === -1) d.shoes.push(r.shoes);
+    });
+    return map;
+  }
+
+  function stats() {
+    var g = goal(), today = todayISO();
+    var start = state.planStart || (state.runs.length ? state.runs.map(function (r) { return r.date; }).sort()[0] : today);
+    var race = state.raceDate || "";
+    var days = byDay();
+
+    var totalMiles = state.runs.reduce(function (a, r) { return a + (Number(r.miles) || 0); }, 0);
+    var totalSec = 0, timedMiles = 0;
+    state.runs.forEach(function (r) { if (r.seconds != null) { totalSec += r.seconds; timedMiles += Number(r.miles) || 0; } });
+
+    // the "as of" day: today, but never past race day
+    var asOf = race && dayDiff(race, today) > 0 ? race : today;
+    var elapsed = Math.max(0, dayDiff(start, asOf) + 1);
+    if (dayDiff(start, today) < 0) elapsed = 0;           // plan hasn't started
+    var requiredToDate = elapsed * g;
+    var banked = totalMiles - requiredToDate;
+
+    var planDays = race ? Math.max(0, dayDiff(start, race) + 1) : 0;
+    var totalRequired = planDays * g;
+    var daysToRace = race ? dayDiff(today, race) : null;
+
+    // streak of consecutive goal-meeting days ending today (or yesterday)
+    var streak = 0, cursor = today;
+    if (!days[today] || days[today].miles < g) cursor = addDays(today, -1);
+    while (days[cursor] && days[cursor].miles >= g - 1e-9) { streak++; cursor = addDays(cursor, -1); }
+
+    var best = 0, run = 0, keys = Object.keys(days).sort();
+    for (var i = 0; i < keys.length; i++) {
+      if (days[keys[i]].miles >= g - 1e-9) {
+        run = (i > 0 && dayDiff(keys[i - 1], keys[i]) === 1 && days[keys[i - 1]].miles >= g - 1e-9) ? run + 1 : 1;
+        if (run > best) best = run;
+      } else run = 0;
+    }
+
+    var hit = keys.filter(function (k) {
+      return days[k].miles >= g - 1e-9 && dayDiff(start, k) >= 0 && dayDiff(k, asOf) >= 0;
+    }).length;
+
+    return {
+      g: g, start: start, race: race, today: today, asOf: asOf, days: days,
+      totalMiles: totalMiles, totalSec: totalSec, timedMiles: timedMiles,
+      elapsed: elapsed, requiredToDate: requiredToDate, banked: banked,
+      planDays: planDays, totalRequired: totalRequired, daysToRace: daysToRace,
+      streak: streak, best: best, hit: hit,
+      remaining: Math.max(0, totalRequired - totalMiles)
+    };
+  }
+
+  /* =================== chart helpers =================== */
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function barPath(x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h));
+    return "M" + x + "," + (y + h) + " L" + x + "," + (y + r) +
+           " Q" + x + "," + y + " " + (x + r) + "," + y +
+           " L" + (x + w - r) + "," + y + " Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) +
+           " L" + (x + w) + "," + (y + h) + " Z";
+  }
+  function niceTicks(max, count) {
+    if (max <= 0) return [0];
+    var raw = max / count, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
+    var step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+    var out = [];
+    for (var v = 0; v <= max + step * 0.001; v += step) out.push(Math.round(v * 1000) / 1000);
+    return out;
+  }
+  function svgText(x, y, str, opts) {
+    opts = opts || {};
+    return '<text x="' + x + '" y="' + y + '" fill="' + (opts.fill || "var(--muted)") +
+      '" font-size="' + (opts.size || 11) + '" font-family="var(--sans)"' +
+      (opts.weight ? ' font-weight="' + opts.weight + '"' : "") +
+      (opts.anchor ? ' text-anchor="' + opts.anchor + '"' : "") +
+      ' style="font-variant-numeric:tabular-nums">' + esc(str) + "</text>";
+  }
+
+  var cumMeta = null, dailyMeta = null;
+
+  /* =================== cumulative chart =================== */
+  function renderCum(s) {
+    var svg = document.getElementById("chartCum");
+    var W = Math.max(320, svg.parentElement.clientWidth || 700), H = 250;
+    var m = { t: 16, r: 62, b: 30, l: 48 };
+    var iw = W - m.l - m.r, ih = H - m.t - m.b;
+
+    var n = s.race ? s.planDays : Math.max(s.elapsed, 2);
+
+    if (!s.race && !state.runs.length) {
+      svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+      svg.setAttribute("width", W); svg.setAttribute("height", H);
+      svg.innerHTML = svgText(W / 2, H / 2, "Set a race date and log a run to see progress", { anchor: "middle", size: 13 });
+      cumMeta = null; return;
+    }
+    n = Math.max(2, n);
+
+    var days = s.days;
+    var cum = [], running = 0;
+    var idxAsOf = Math.min(n - 1, dayDiff(s.start, s.asOf));
+    for (var i = 0; i < n; i++) {
+      var iso = addDays(s.start, i);
+      if (days[iso]) running += days[iso].miles;
+      cum.push({ i: i, iso: iso, actual: running, required: (i + 1) * s.g });
+    }
+    var yMax = Math.max(s.g * 2, n * s.g, running) * 1.06;
+    var x = function (i) { return m.l + (n === 1 ? 0 : i * iw / (n - 1)); };
+    var y = function (v) { return m.t + ih - (v / yMax) * ih; };
+
+    var out = "";
+    niceTicks(yMax, 4).forEach(function (t) {
+      out += '<line x1="' + m.l + '" y1="' + y(t) + '" x2="' + (m.l + iw) + '" y2="' + y(t) +
+             '" stroke="var(--grid)" stroke-width="1"/>';
+      out += svgText(m.l - 8, y(t) + 3.5, mi(t).replace(/\.00$/, ""), { anchor: "end" });
+    });
+
+    // required minimum — context series, grey
+    out += '<polyline fill="none" stroke="var(--context)" stroke-width="2" stroke-linecap="round" points="' +
+      cum.map(function (p) { return x(p.i) + "," + y(p.required); }).join(" ") + '"/>';
+
+    // actual — the emphasised series
+    var upto = cum.slice(0, Math.max(0, idxAsOf + 1));
+    if (upto.length) {
+      var pts = upto.map(function (p) { return x(p.i) + "," + y(p.actual); }).join(" ");
+      out += '<polygon fill="var(--series-1-wash)" points="' + x(0) + "," + y(0) + " " + pts + " " + x(upto[upto.length - 1].i) + "," + y(0) + '"/>';
+      out += '<polyline fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' + pts + '"/>';
+      var last = upto[upto.length - 1];
+      out += '<circle cx="' + x(last.i) + '" cy="' + y(last.actual) + '" r="4.5" fill="var(--series-1)" stroke="var(--surface-1)" stroke-width="2"/>';
+      out += svgText(x(last.i) + 9, y(last.actual) + 4, mi(last.actual) + " mi",
+        { fill: "var(--series-1)", weight: 600, size: 11.5 });
+    }
+    out += svgText(x(n - 1) + 9, y(cum[n - 1].required) + 4, mi(cum[n - 1].required).replace(/\.00$/, "") + " mi",
+      { fill: "var(--context)", weight: 600, size: 11.5 });
+
+    out += '<line x1="' + m.l + '" y1="' + (m.t + ih) + '" x2="' + (m.l + iw) + '" y2="' + (m.t + ih) + '" stroke="var(--axis)" stroke-width="1"/>';
+    [0, Math.floor((n - 1) / 2), n - 1].filter(function (v, k, a) { return a.indexOf(v) === k; }).forEach(function (i) {
+      out += svgText(x(i), m.t + ih + 17, fmtShort(addDays(s.start, i)), { anchor: i === 0 ? "start" : i === n - 1 ? "end" : "middle" });
+    });
+
+    out += '<g id="cumHover" opacity="0"><line y1="' + m.t + '" y2="' + (m.t + ih) + '" stroke="var(--axis)" stroke-width="1"/>' +
+           '<circle r="4.5" fill="var(--series-1)" stroke="var(--surface-1)" stroke-width="2"/></g>';
+    out += '<rect id="cumCapture" x="' + m.l + '" y="' + m.t + '" width="' + iw + '" height="' + ih + '" fill="transparent" style="cursor:crosshair"/>';
+
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("width", W); svg.setAttribute("height", H);
+    svg.innerHTML = out;
+    cumMeta = { cum: cum, x: x, y: y, m: m, iw: iw, n: n, idxAsOf: idxAsOf, g: s.g };
+    wireCum();
+  }
+
+  function wireCum() {
+    var svg = document.getElementById("chartCum"), tip = document.getElementById("ttCum");
+    var cap = svg.querySelector("#cumCapture"), hov = svg.querySelector("#cumHover");
+    if (!cap || !cumMeta) return;
+    function move(ev) {
+      var r = svg.getBoundingClientRect();
+      var px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+      var mm = cumMeta;
+      var i = Math.round((px - mm.m.l) / (mm.iw / Math.max(1, mm.n - 1)));
+      i = Math.max(0, Math.min(mm.n - 1, i));
+      var p = mm.cum[i], shown = i <= mm.idxAsOf;
+      hov.setAttribute("opacity", "1");
+      hov.querySelector("line").setAttribute("x1", mm.x(i));
+      hov.querySelector("line").setAttribute("x2", mm.x(i));
+      var c = hov.querySelector("circle");
+      c.setAttribute("cx", mm.x(i)); c.setAttribute("cy", mm.y(shown ? p.actual : p.required));
+      c.setAttribute("opacity", shown ? "1" : "0");
+      var delta = p.actual - p.required;
+      tip.innerHTML = '<div class="tt-title">' + esc(fmtShort(p.iso)) + "</div>" +
+        (shown ? '<div class="tt-row"><span>Logged</span><b>' + mi(p.actual) + " mi</b></div>" : "") +
+        '<div class="tt-row"><span>Required</span><b>' + mi(p.required) + " mi</b></div>" +
+        (shown ? '<div class="tt-row"><span>' + (delta >= 0 ? "Banked" : "Behind") + "</span><b>" + signed(delta) + " mi</b></div>" : "");
+      tip.style.opacity = "1";
+      var tw = tip.offsetWidth;
+      tip.style.left = Math.max(0, Math.min(r.width - tw, mm.x(i) - tw / 2)) + "px";
+      tip.style.top = (mm.y(shown ? p.actual : p.required) - tip.offsetHeight - 12) + "px";
+    }
+    function out() { hov.setAttribute("opacity", "0"); tip.style.opacity = "0"; }
+    cap.addEventListener("mousemove", move);
+    cap.addEventListener("mouseleave", out);
+    cap.addEventListener("touchmove", function (e) { move(e); e.preventDefault(); }, { passive: false });
+    cap.addEventListener("touchend", out);
+  }
+
+  /* =================== daily bar chart =================== */
+  function renderDaily(s) {
+    var svg = document.getElementById("chartDaily");
+    var W = Math.max(320, svg.parentElement.clientWidth || 700), H = 230;
+    var m = { t: 16, r: 58, b: 30, l: 40 };
+    var iw = W - m.l - m.r, ih = H - m.t - m.b;
+    var N = 30, end = s.today;
+    var win = [];
+    for (var k = N - 1; k >= 0; k--) {
+      var iso = addDays(end, -k);
+      win.push({ iso: iso, miles: s.days[iso] ? s.days[iso].miles : 0, d: s.days[iso] || null });
+    }
+    var maxV = Math.max(s.g, Math.max.apply(null, win.map(function (w) { return w.miles; }))) * 1.18;
+    var band = iw / N, bw = Math.min(24, Math.max(4, band - 4));
+    var y = function (v) { return m.t + ih - (v / maxV) * ih; };
+
+    var out = "";
+    niceTicks(maxV, 3).forEach(function (t) {
+      out += '<line x1="' + m.l + '" y1="' + y(t) + '" x2="' + (m.l + iw) + '" y2="' + y(t) + '" stroke="var(--grid)" stroke-width="1"/>';
+      out += svgText(m.l - 8, y(t) + 3.5, String(Math.round(t * 10) / 10), { anchor: "end" });
+    });
+
+    win.forEach(function (w, i) {
+      if (w.miles <= 0) return;
+      var bx = m.l + i * band + (band - bw) / 2, by = y(w.miles);
+      out += '<path d="' + barPath(bx, by, bw, m.t + ih - by, 4) + '" fill="var(--series-1)"/>';
+    });
+
+    // goal reference line — solid, labelled (position, not colour, carries the meaning)
+    out += '<line x1="' + m.l + '" y1="' + y(s.g) + '" x2="' + (m.l + iw) + '" y2="' + y(s.g) + '" stroke="var(--context)" stroke-width="1.5"/>';
+    out += svgText(m.l + iw + 8, y(s.g) + 4, mi(s.g).replace(/\.?0+$/, "") + " mi goal", { fill: "var(--context)", weight: 600, size: 11.5 });
+
+    out += '<line x1="' + m.l + '" y1="' + (m.t + ih) + '" x2="' + (m.l + iw) + '" y2="' + (m.t + ih) + '" stroke="var(--axis)" stroke-width="1"/>';
+    [0, 9, 19, 29].forEach(function (i) {
+      out += svgText(m.l + i * band + band / 2, m.t + ih + 17, fmtShort(win[i].iso), { anchor: "middle" });
+    });
+    win.forEach(function (w, i) {
+      out += '<rect class="dcap" data-i="' + i + '" x="' + (m.l + i * band) + '" y="' + m.t + '" width="' + band + '" height="' + ih + '" fill="transparent"/>';
+    });
+
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("width", W); svg.setAttribute("height", H);
+    svg.innerHTML = out;
+    dailyMeta = { win: win, band: band, m: m, y: y, g: s.g, ih: ih };
+
+    var tip = document.getElementById("ttDaily");
+    Array.prototype.forEach.call(svg.querySelectorAll(".dcap"), function (rect) {
+      rect.addEventListener("mouseenter", function () {
+        var w = dailyMeta.win[Number(rect.dataset.i)], d = w.d;
+        var over = w.miles - dailyMeta.g;
+        tip.innerHTML = '<div class="tt-title">' + esc(fmtShort(w.iso)) + "</div>" +
+          '<div class="tt-row"><span>Miles</span><b>' + mi(w.miles) + "</b></div>" +
+          (d && d.timed ? '<div class="tt-row"><span>Pace</span><b>' + fmtPace(d.seconds, d.timed) + "/mi</b></div>" : "") +
+          (d && d.shoes.length ? '<div class="tt-row"><span>Shoes</span><b>' + esc(d.shoes.join(", ")) + "</b></div>" : "") +
+          '<div class="tt-row"><span>' + (over >= 0 ? "Over goal" : "Short") + "</span><b>" + signed(over) + "</b></div>";
+        tip.style.opacity = "1";
+        var cx = dailyMeta.m.l + Number(rect.dataset.i) * dailyMeta.band + dailyMeta.band / 2;
+        var tw = tip.offsetWidth, rw = svg.getBoundingClientRect().width;
+        tip.style.left = Math.max(0, Math.min(rw - tw, cx - tw / 2)) + "px";
+        tip.style.top = Math.max(0, dailyMeta.y(Math.max(w.miles, dailyMeta.g)) - tip.offsetHeight - 12) + "px";
+      });
+      rect.addEventListener("mouseleave", function () { tip.style.opacity = "0"; });
+    });
+  }
+
+  /* =================== tables =================== */
+  function renderTables(s) {
+    // --- cumulative table twin ---
+    var rows = [], running = 0;
+    var n = s.race ? s.planDays : s.elapsed;
+    for (var i = 0; i < n; i++) {
+      var iso = addDays(s.start, i);
+      if (s.days[iso]) running += s.days[iso].miles;
+      if (dayDiff(iso, s.asOf) < 0) break;
+      rows.push({ iso: iso, cum: running, req: (i + 1) * s.g });
+    }
+    document.getElementById("tblCum").innerHTML = rows.length ? '<table><thead><tr><th>Date</th><th class="num">Cumulative</th><th class="num">Required</th><th class="num">Banked</th></tr></thead><tbody>' +
+      rows.slice().reverse().map(function (r) {
+        var d = r.cum - r.req;
+        return "<tr><td>" + esc(fmtShort(r.iso)) + '</td><td class="num">' + mi(r.cum) + '</td><td class="num">' + mi(r.req) +
+          '</td><td class="num ' + (d >= 0 ? "pos" : "neg") + '">' + signed(d) + "</td></tr>";
+      }).join("") + "</tbody></table>" : '<p class="empty">Nothing logged yet.</p>';
+
+    // --- daily table twin ---
+    var keys = Object.keys(s.days).sort().reverse();
+    document.getElementById("tblDaily").innerHTML = keys.length ? '<table><thead><tr><th>Date</th><th class="num">Miles</th><th class="num">Pace</th><th class="num">Vs. goal</th><th>Result</th></tr></thead><tbody>' +
+      keys.map(function (k) {
+        var d = s.days[k], over = d.miles - s.g, ok = d.miles >= s.g - 1e-9;
+        return "<tr><td>" + esc(fmtShort(k)) + '</td><td class="num">' + mi(d.miles) +
+          '</td><td class="num">' + (d.timed ? fmtPace(d.seconds, d.timed) : "—") +
+          '</td><td class="num ' + (over >= 0 ? "pos" : "neg") + '">' + signed(over) + "</td><td>" +
+          '<span class="status"><span class="dot" style="background:' + (ok ? "var(--good)" : "var(--critical)") + '"></span>' +
+          (ok ? (over > 1e-9 ? "Over minimum" : "Met minimum") : "Under minimum") + "</span></td></tr>";
+      }).join("") + "</tbody></table>" : '<p class="empty">Nothing logged yet.</p>';
+
+    // --- shoes ---
+    var shoes = {};
+    state.runs.forEach(function (r) {
+      var name = (r.shoes || "").trim(); if (!name) name = "Unspecified";
+      var key = name.toLowerCase();
+      if (!shoes[key]) shoes[key] = { name: name, miles: 0, runs: 0, sec: 0, timed: 0, last: r.date };
+      var sh = shoes[key];
+      sh.miles += Number(r.miles) || 0; sh.runs += 1;
+      if (r.seconds != null) { sh.sec += r.seconds; sh.timed += Number(r.miles) || 0; }
+      if (r.date > sh.last) sh.last = r.date;
+    });
+    var list = Object.keys(shoes).map(function (k) { return shoes[k]; }).sort(function (a, b) { return b.miles - a.miles; });
+    var lim = Number(state.shoeLimit) > 0 ? Number(state.shoeLimit) : 400;
+    document.getElementById("shoeTable").innerHTML = list.length ? '<table><thead><tr><th>Shoes</th><th class="num">Runs</th><th class="num">Miles</th><th class="num">Avg pace</th><th>Wear</th><th>Status</th><th class="num">Last worn</th></tr></thead><tbody>' +
+      list.map(function (sh) {
+        var pct = Math.min(100, (sh.miles / lim) * 100);
+        var cls = pct >= 100 ? "crit" : pct >= 75 ? "warn" : "";
+        var label = pct >= 100 ? "Retire" : pct >= 75 ? "Wearing out" : "Good";
+        var col = pct >= 100 ? "var(--critical)" : pct >= 75 ? "var(--warning)" : "var(--good)";
+        return "<tr><td>" + esc(sh.name) + '</td><td class="num">' + sh.runs + '</td><td class="num">' + mi(sh.miles) +
+          '</td><td class="num">' + (sh.timed ? fmtPace(sh.sec, sh.timed) : "—") +
+          '</td><td><span class="meter ' + cls + '"><span style="width:' + pct.toFixed(1) + '%"></span></span></td>' +
+          '<td><span class="status"><span class="dot" style="background:' + col + '"></span>' + label + " " +
+          Math.round(pct) + '%</span></td><td class="num">' + esc(fmtShort(sh.last)) + "</td></tr>";
+      }).join("") + "</tbody></table>" : '<p class="empty">No shoes recorded yet — add them when you log a run.</p>';
+
+    var dl = document.getElementById("shoeList");
+    dl.innerHTML = list.filter(function (sh) { return sh.name !== "Unspecified"; })
+      .map(function (sh) { return '<option value="' + esc(sh.name) + '">'; }).join("");
+
+    // --- run log ---
+    var runs = state.runs.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id; });
+    document.getElementById("runTable").innerHTML = runs.length ? '<table><thead><tr><th>Date</th><th class="num">Miles</th><th class="num">Time</th><th class="num">Pace /mi</th><th>Shoes</th><th>Notes</th><th></th></tr></thead><tbody>' +
+      runs.map(function (r) {
+        return "<tr><td>" + esc(fmtShort(r.date)) + '</td><td class="num">' + mi(r.miles) +
+          '</td><td class="num">' + fmtDur(r.seconds) + '</td><td class="num">' + fmtPace(r.seconds, r.miles) +
+          "</td><td>" + esc(r.shoes || "—") + "</td><td>" + esc(r.notes || "") +
+          '</td><td class="num"><button class="icon" data-del="' + r.id + '" aria-label="Delete run">Delete</button></td></tr>';
+      }).join("") + "</tbody></table>" : '<p class="empty">No runs logged yet. Add your first one above.</p>';
+
+    document.getElementById("logCount").textContent = runs.length
+      ? runs.length + " run" + (runs.length === 1 ? "" : "s") + " logged · " + mi(s.totalMiles) + " miles total"
+      : "Nothing logged yet.";
+  }
+
+  /* =================== hero + KPI row =================== */
+  function renderHead(s) {
+    var hero = document.getElementById("heroDays"), lab = document.getElementById("heroLabel");
+    hero.classList.remove("small");
+    if (s.daysToRace == null) {
+      hero.textContent = "—"; hero.classList.add("small");
+      lab.textContent = "set a race date to start the countdown";
+    } else if (s.daysToRace > 0) {
+      hero.textContent = s.daysToRace; lab.textContent = "day" + (s.daysToRace === 1 ? "" : "s") + " until race day";
+    } else if (s.daysToRace === 0) {
+      hero.textContent = "Today"; hero.classList.add("small"); lab.textContent = "race day — go get it";
+    } else {
+      hero.textContent = Math.abs(s.daysToRace); lab.textContent = "days since race day";
+    }
+    document.getElementById("heroRace").textContent =
+      s.race ? [state.raceName, fmtLong(s.race)].filter(Boolean).join(" · ") : "";
+
+    var pct = s.elapsed > 0 ? Math.round((s.hit / s.elapsed) * 100) : 0;
+    var avg = s.timedMiles ? fmtPace(s.totalSec, s.timedMiles) + "/mi" : "—";
+    var tiles = [
+      { l: "Miles logged", v: mi(s.totalMiles), n: s.race ? "of " + mi(s.totalRequired).replace(/\.00$/, "") + " mi required by race day" : "no race date set" },
+      { l: "Banked vs. required", v: signed(s.banked), n: (s.banked >= 0 ? "ahead of" : "behind") + " the " + mi(s.g).replace(/\.?0+$/, "") + " mi/day minimum", c: s.banked >= 0 ? "pos" : "neg" },
+      { l: "Current streak", v: s.streak, n: "best " + s.best + " day" + (s.best === 1 ? "" : "s") },
+      { l: "Days at goal", v: pct + "%", n: s.hit + " of " + s.elapsed + " day" + (s.elapsed === 1 ? "" : "s") },
+      { l: "Average pace", v: avg, n: s.timedMiles ? mi(s.timedMiles) + " mi timed" : "add times to see pace" }
+    ];
+    document.getElementById("kpis").innerHTML = tiles.map(function (t) {
+      return '<div class="kpi"><div class="k-label">' + t.l + '</div><div class="k-value ' + (t.c || "") + '">' +
+        esc(t.v) + '</div><div class="k-note">' + esc(t.n) + "</div></div>";
+    }).join("");
+
+    document.getElementById("goalEcho").textContent = mi(s.g).replace(/\.?0+$/, "") + " mi";
+    document.getElementById("setupBanner").classList.toggle("hidden", !!s.race);
+  }
+
+  /* =================== render =================== */
+  function render() {
+    var s = stats();
+    renderHead(s);
+    renderCum(s);
+    renderDaily(s);
+    renderTables(s);
+  }
+
+  /* =================== events =================== */
+  function bindSetting(id, key, cast) {
+    var el = document.getElementById(id);
+    el.addEventListener("change", function () {
+      if (!HP.canEdit()) { fill(); return; }
+      state[key] = cast ? cast(el.value) : el.value;
+      if (key === "raceDate" && state.raceDate && !state.planStart) {
+        state.planStart = todayISO();
+        document.getElementById("planStart").value = state.planStart;
+      }
+      save(); HP.emit();
+    });
+  }
+  bindSetting("raceName", "raceName");
+  bindSetting("raceDate", "raceDate");
+  bindSetting("planStart", "planStart");
+  bindSetting("dailyGoal", "dailyGoal", Number);
+  bindSetting("shoeLimit", "shoeLimit", Number);
+
+  document.getElementById("logForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!HP.canEdit()) return;
+    var date = document.getElementById("fDate").value || todayISO();
+    var miles = Number(document.getElementById("fMiles").value);
+    var timeRaw = document.getElementById("fTime").value.trim();
+    var sec = timeRaw ? parseTime(timeRaw) : null;
+    var hint = document.getElementById("formHint");
+    if (!(miles > 0)) { hint.textContent = "Enter a distance greater than zero."; return; }
+    if (timeRaw && sec == null) { hint.textContent = "Couldn't read that time — try mm:ss, like 9:45."; return; }
+
+    state.runs.push({
+      id: Date.now(), date: date, miles: miles, seconds: sec,
+      shoes: document.getElementById("fShoes").value.trim(),
+      notes: document.getElementById("fNotes").value.trim()
+    });
+    if (!state.planStart || date < state.planStart) {
+      state.planStart = state.planStart ? (date < state.planStart ? date : state.planStart) : date;
+      document.getElementById("planStart").value = state.planStart;
+    }
+    save();
+
+    var dayTotal = state.runs.filter(function (r) { return r.date === date; })
+      .reduce(function (a, r) { return a + Number(r.miles); }, 0);
+    var over = dayTotal - goal();
+    hint.textContent = "Logged " + mi(miles) + " mi on " + fmtShort(date) + " — " +
+      (over >= 0 ? mi(over) + " mi over" : mi(-over) + " mi short of") + " the daily minimum" +
+      (sec ? " at " + fmtPace(sec, miles) + "/mi." : ".");
+
+    document.getElementById("fMiles").value = "";
+    document.getElementById("fTime").value = "";
+    document.getElementById("fNotes").value = "";
+    render();
+  });
+
+  document.getElementById("runTable").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-del]"); if (!btn) return;
+    if (!HP.canEdit()) return;
+    var id = Number(btn.dataset.del);
+    var r = state.runs.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    if (!confirm("Delete the " + mi(r.miles) + " mi run on " + fmtShort(r.date) + "?")) return;
+    state.runs = state.runs.filter(function (x) { return x.id !== id; });
+    save(); render();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-toggle]"), function (btn) {
+    btn.addEventListener("click", function () {
+      var el = document.getElementById(btn.dataset.toggle);
+      var open = el.classList.toggle("hidden");
+      btn.textContent = open ? "Table view" : "Hide table";
+    });
+  });
+
+  document.getElementById("btnTheme").addEventListener("click", function () {
+    HP.cycleTheme(); HP.emit();
+  });
+
+  /* Export: a viewer can't take a blob link, so route through the downloads
+     capability when the page runs as an artifact, and fall back to a plain
+     anchor when the file is opened directly. */
+  var inViewer = !!(window.claude && window.claude.use);
+  function anchorSave(json, filename) {
+    var blob = new Blob([json], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  if (inViewer) {
+    window.claude.use("downloads").then(function (dl) {
+      if (!dl) document.getElementById("btnExport").classList.add("hidden");
+    }).catch(function () {});
+  }
+  document.getElementById("btnExport").addEventListener("click", function () {
+    var json = JSON.stringify(HP.state, null, 2);
+    var filename = "hyrox-prep-" + todayISO() + ".json";
+    var hint = document.getElementById("formHint");
+    if (!inViewer) { anchorSave(json, filename); return; }
+    window.claude.use("downloads").then(function (dl) {
+      if (!dl) { document.getElementById("btnExport").classList.add("hidden"); return; }
+      return dl.save({ filename: filename, data: json }).catch(function (e) {
+        if (!e || e.code === "declined") return;          // viewer said no; not an error
+        hint.textContent = e.code === "rate_limited"
+          ? "A save is already open \u2014 finish that one first."
+          : "Couldn't save the export file.";
+      });
+    }).catch(function () {});
+  });
+  document.getElementById("btnImport").addEventListener("click", function () { document.getElementById("fileImport").click(); });
+  document.getElementById("fileImport").addEventListener("change", function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        var data = JSON.parse(fr.result);
+        var incoming = null;
+        if (data && data.profiles) incoming = data.profiles;
+        else if (data && Array.isArray(data.runs)) {              // older single-athlete export
+          var one = HP.blankProfile(data.name || "Imported");
+          Object.keys(one).forEach(function (k) { if (data[k] !== undefined && k !== "id") one[k] = data[k]; });
+          incoming = {}; incoming[one.id] = one;
+        }
+        if (!incoming) throw new Error("unrecognised");
+        var n = Object.keys(incoming).length;
+        if (!confirm("Import " + n + " athlete" + (n === 1 ? "" : "s") + " from this file?" +
+            (HP.status().mode === "shared" ? " They'll be added to the shared roster everyone sees." : ""))) return;
+        HP.replaceAll(incoming);
+        reseat(); fill(); HP.emit();
+      } catch (err) { alert("That doesn't look like a Hyrox Prep export."); }
+      e.target.value = "";
+    };
+    fr.readAsText(f);
+  });
+
+  var rt;
+  window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(render, 120); });
+
+  /* =================== init =================== */
+  function fill() {
+    document.getElementById("raceName").value = state.raceName || "";
+    document.getElementById("raceDate").value = state.raceDate || "";
+    document.getElementById("planStart").value = state.planStart || "";
+    document.getElementById("dailyGoal").value = state.dailyGoal;
+    document.getElementById("shoeLimit").value = state.shoeLimit;
+    document.getElementById("fDate").value = todayISO();
+  }
+  HP.onChange(function () { reseat(); fill(); render(); });
+  fill();
+  render();
+})();
+</script>
+
+<script>
+(function () {
+  "use strict";
+  var P = HP.active();
+  function reseat() { P = HP.active(); }
+
+  var DAYNAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  /* ============ phase allocation ============
+     Counted backwards from race day: taper last, then race prep, build,
+     foundation, and any surplus weeks become a base phase up front. */
+  function phaseList(W) {
+    if (W <= 0) return [];
+    if (W < 4) {
+      var o = [];
+      for (var j = 0; j < W - 1; j++) o.push("Race prep");
+      o.push("Taper"); return o;
+    }
+    var taper = 1;
+    var peak = Math.min(3, Math.max(1, Math.round(W * 0.22)));
+    var build = Math.max(1, Math.min(5, Math.round(W * 0.34), W - taper - peak));
+    var found = W - taper - peak - build;
+    var base = Math.max(0, found - 4);
+    found = found - base;
+    var out = [], i;
+    for (i = 0; i < base; i++) out.push("Base");
+    for (i = 0; i < found; i++) out.push("Foundation");
+    for (i = 0; i < build; i++) out.push("Build");
+    for (i = 0; i < peak; i++) out.push("Race prep");
+    out.push("Taper");
+    return out;
+  }
+
+  function weekMiles(idx, W, base, phase, deload) {
+    var lo = base === "low" ? 8 : base === "mod" ? 14 : 20;
+    var hi = base === "low" ? 20 : base === "mod" ? 26 : 32;
+    var t = W <= 1 ? 1 : idx / (W - 1);
+    var v = phase === "Taper" ? hi * 0.5 : lo + (hi - lo) * Math.min(1, t * 1.25);
+    if (deload) v *= 0.75;
+    return Math.round(v * 2) / 2;
+  }
+
+  /* ============ session content ============ */
+  function L() { return HP.LOADS[HP.DIVISIONS[P.division].loadKey]; }
+
+  function strengthA(phase, wk) {
+    var l = L(), b;
+    if (phase === "Base" || phase === "Foundation")
+      b = ["<b>Back squat</b> 3 × 8 @ RPE 6 — leave two in the tank",
+           "<b>Romanian deadlift</b> 3 × 10",
+           "<b>Walking lunge</b> 3 × 20 steps, bodyweight → add the " + l.lunge + " bag when 20 steps feel easy",
+           "<b>Sled push</b> 4 × 20 m, building toward " + l.push,
+           "Core: hollow hold 3 × 40 s"];
+    else if (phase === "Build")
+      b = ["<b>Back squat</b> 4 × 5 @ RPE 8",
+           "<b>Trap-bar deadlift</b> 4 × 5",
+           "<b>Sandbag lunge</b> 4 × 25 m @ " + l.lunge,
+           "<b>Sled push</b> 6 × 25 m @ " + l.push + " — full race load, walk back as rest",
+           "<b>Sled pull</b> 4 × 25 m @ " + l.pull + ", hand-over-hand"];
+    else if (phase === "Race prep")
+      b = ["<b>Back squat</b> 3 × 3 @ RPE 8 — sharpen, don't grind",
+           "<b>Sled push</b> 4 × 50 m at full race load " + l.push + ", timed",
+           "<b>Sandbag lunge</b> 3 × 50 m @ " + l.lunge + " unbroken",
+           "<b>Wall balls</b> 3 × 25 @ " + l.ball];
+    else
+      b = ["<b>Back squat</b> 2 × 3 @ RPE 6 — movement quality only",
+           "<b>Sled push</b> 2 × 25 m at race load, easy",
+           "Mobility: hips, ankles, thoracic spine — 10 min"];
+    return { type: "Strength A", title: "Legs & posterior chain", blocks: b };
+  }
+
+  function strengthB(phase) {
+    var l = L(), b;
+    if (phase === "Base" || phase === "Foundation")
+      b = ["<b>SkiErg</b> 5 × 250 m easy, 60 s rest — groove the hip hinge",
+           "<b>Pull-ups or lat pulldown</b> 3 × 8",
+           "<b>Farmers carry</b> 4 × 50 m @ " + l.carry,
+           "<b>Dumbbell row</b> 3 × 10 each side",
+           "Core: plank 3 × 45 s"];
+    else if (phase === "Build")
+      b = ["<b>SkiErg</b> 6 × 250 m @ race effort, 45 s rest",
+           "<b>Weighted pull-ups</b> 4 × 6",
+           "<b>Sled pull</b> 5 × 25 m @ " + l.pull + " — the single biggest time leak for most athletes",
+           "<b>Farmers carry</b> 4 × 100 m @ " + l.carry + ", no set-downs",
+           "<b>Wall balls</b> 4 × 25 @ " + l.ball];
+    else if (phase === "Race prep")
+      b = ["<b>SkiErg</b> 1000 m time trial — record it",
+           "<b>Sled pull</b> 4 × 50 m @ " + l.pull + " at race distance",
+           "<b>Farmers carry</b> 2 × 200 m @ " + l.carry + " — race distance, no set-downs",
+           "<b>Wall balls</b> 2 × 50 @ " + l.ball + ", note where your set breaks"];
+    else
+      b = ["<b>SkiErg</b> 4 × 250 m easy",
+           "<b>Farmers carry</b> 2 × 100 m @ " + l.carry,
+           "<b>Wall balls</b> 2 × 20 @ " + l.ball + " — rehearse the rhythm, no fatigue"];
+    return { type: "Strength B", title: "Pull, grip & engine", blocks: b };
+  }
+
+  function runQuality(phase, wk, miles) {
+    var b;
+    if (phase === "Base" || phase === "Foundation")
+      b = ["Warm up 10 min easy",
+           "<b>" + Math.min(10, 5 + wk) + " × 400 m</b> @ 5k effort, 90 s jog recovery",
+           "Cool down 10 min easy",
+           "Stay honest — this is effort-based, not pace-chasing"];
+    else if (phase === "Build")
+      b = ["Warm up 10 min easy",
+           "<b>" + Math.min(6, 3 + wk) + " × 1 km</b> @ target race pace, 400 m jog between",
+           "Cool down 10 min",
+           "The 1 km repeat is the race's whole running unit — learn what it feels like"];
+    else if (phase === "Race prep")
+      b = ["Warm up 10 min",
+           "<b>6 × 1 km</b> @ race pace, 200 m jog — short recovery on purpose",
+           "Cool down 10 min",
+           "Recovery is deliberately short: this is the rhythm of the actual race"];
+    else
+      b = ["Warm up 10 min", "<b>3 × 1 km</b> @ race pace, full recovery", "Cool down 10 min"];
+    return { type: "Run — quality", title: "Interval session", blocks: b };
+  }
+
+  function hybrid(phase, wk, sim) {
+    var l = L(), b, title = "Compromised running";
+    if (sim === "full") {
+      title = "Full race simulation";
+      b = ["<b>The whole thing:</b> 8 × 1 km run, each followed by its station in order",
+           "SkiErg 1000 m · Sled push 50 m " + l.push + " · Sled pull 50 m " + l.pull + " · Burpee broad jump 80 m",
+           "Row 1000 m · Farmers carry 200 m " + l.carry + " · Sandbag lunge 100 m " + l.lunge + " · 100 wall balls " + l.ball,
+           "<b>Jog every transition.</b> Time the roxzone separately — it is scored, and it is where most people quietly lose 4 minutes",
+           "Take the next day fully off"];
+    } else if (sim === "half") {
+      title = "Half simulation";
+      b = ["<b>4 × (1 km run + station)</b> — stations 1 to 4 in race order",
+           "SkiErg 1000 m · Sled push 50 m @ " + l.push + " · Sled pull 50 m @ " + l.pull + " · Burpee broad jump 80 m",
+           "Jog every transition, no walking",
+           "Record each run split and each station split"];
+    } else if (phase === "Base" || phase === "Foundation") {
+      b = ["<b>4 rounds:</b> 400 m run + 20 wall balls + 15 burpees",
+           "Walk 60 s between rounds",
+           "Goal is learning to run on tired legs, not a hard score"];
+    } else if (phase === "Build") {
+      b = ["<b>6 rounds:</b> 600 m run + one station at full race load",
+           "Rotate a different station each week so you cover all 8 across the block",
+           "Jog the transitions — treat the walk to the station as part of the workout"];
+    } else if (phase === "Race prep") {
+      b = ["<b>4 × (1 km @ race pace + station at race load)</b>",
+           "Pick the four stations you are slowest at",
+           "Jog transitions, time them"];
+    } else {
+      b = ["<b>2 rounds:</b> 1 km @ race pace + 25 wall balls @ " + l.ball, "Stop while it still feels easy"];
+    }
+    return { type: sim ? "Simulation" : "Hybrid", title: title, blocks: b, sim: !!sim };
+  }
+
+  function longRun(phase, miles) {
+    var d = Math.max(2, Math.round(miles * 0.35 * 2) / 2);
+    return {
+      type: "Run — long", title: "Easy long run · " + d + " mi",
+      blocks: ["<b>" + d + " miles</b> easy and conversational — you should be able to talk",
+               "Finish with 10 min of station skill work (wall ball form, sled set-up, lunge cadence)",
+               "This is the aerobic base everything else sits on. Do not race it."]
+    };
+  }
+
+  function easyRun(miles) {
+    var d = Math.max(1, Math.round(miles * 0.15 * 2) / 2);
+    return { type: "Run — easy", title: "Recovery run · " + d + " mi",
+      blocks: ["<b>" + d + " miles</b> very easy", "Optional 10 min mobility after"] };
+  }
+
+  var REST = { type: "Rest", title: "Rest", rest: true,
+    blocks: ["Full rest, or a walk.", "Still clear your <b>1 mile daily minimum</b> — a walk counts. Log it in the mile tracker."] };
+
+  /* ============ build the plan ============ */
+  function buildPlan() {
+    var today = HP.todayISO();
+    if (!P.raceDate) return null;
+    var toRace = HP.dayDiff(today, P.raceDate);
+    if (toRace < 0) return { past: true, toRace: toRace };
+    var W = Math.max(1, Math.ceil((toRace + 1) / 7));
+    var phases = phaseList(W);
+    var days = Number(P.daysPerWeek || 5);
+    var base = P.runBase || "low";
+
+    // Monday of the current week
+    var dow = HP.parseISO(today).getDay();           // 0 = Sun
+    var monday = HP.addDays(today, dow === 0 ? -6 : 1 - dow);
+
+    var weeks = [], simFull = -1, simHalf = -1;
+    for (var i = 0; i < W; i++) if (phases[i] === "Build") simHalf = i;          // last build week
+    for (i = 0; i < W; i++) if (phases[i] === "Race prep") { simFull = i; break; } // first race-prep week
+
+    for (i = 0; i < W; i++) {
+      var ph = phases[i];
+      var deload = (ph === "Base" || ph === "Foundation" || ph === "Build") && i % 4 === 3;
+      var m = weekMiles(i, W, base, ph, deload);
+      var sim = i === simFull ? "full" : i === simHalf ? "half" : null;
+
+      var sA = strengthA(ph, i + 1), sB = strengthB(ph),
+          rQ = runQuality(ph, i + 1, m), hy = hybrid(ph, i + 1, sim),
+          lR = longRun(ph, m), eR = easyRun(m);
+
+      var slots;
+      if (days >= 6)      slots = [sA, rQ, eR, hy, sB, lR, REST];
+      else if (days === 5) slots = [sA, rQ, REST, hy, sB, lR, REST];
+      else                 slots = [sA, REST, hy, REST, sB, lR, REST];
+
+      weeks.push({
+        n: i + 1, phase: ph, deload: deload, miles: m, sim: sim,
+        start: HP.addDays(monday, i * 7), end: HP.addDays(monday, i * 7 + 6),
+        sessions: slots
+      });
+    }
+    var current = 0;
+    for (i = 0; i < W; i++) if (HP.dayDiff(weeks[i].start, today) >= 0) current = i;
+    return { weeks: weeks, W: W, current: current, toRace: toRace, phases: phases };
+  }
+
+  /* ============ rendering ============ */
+  function sessionCard(wkN, dayIdx, s, dateISO) {
+    var key = "w" + wkN + "d" + dayIdx;
+    var done = !!P.done[key];
+    return '<div class="session' + (s.rest ? " rest" : "") + (done ? " done" : "") + '">' +
+      '<div class="when">' + DAYNAMES[dayIdx] + " · " + HP.esc(HP.fmtShort(dateISO)) +
+      (s.sim ? ' <span class="pill sim">Simulation</span>' : "") + "</div>" +
+      "<h3>" + HP.esc(s.title) + "</h3>" +
+      (s.rest ? "" : '<div class="when" style="color:var(--text-secondary);text-transform:none;letter-spacing:0;font-weight:550">' + HP.esc(s.type) + "</div>") +
+      "<ul>" + s.blocks.map(function (b) { return "<li>" + b + "</li>"; }).join("") + "</ul>" +
+      (s.rest ? "" : '<label class="tick"><input type="checkbox" data-done="' + key + '"' + (done ? " checked" : "") + "> Done</label>") +
+      "</div>";
+  }
+
+  function render() {
+    var plan = buildPlan();
+    var div = HP.DIVISIONS[P.division];
+
+    document.getElementById("noRace").classList.toggle("hidden", !!P.raceDate);
+    renderLoads(div);
+    renderBench(div);
+    renderPace(div);
+    renderRationale();
+
+    if (!plan || plan.past) {
+      document.getElementById("planSummary").textContent = plan && plan.past
+        ? "Race day has passed — set a new race date to build the next block."
+        : "No race date set yet.";
+      document.getElementById("phaseBar").innerHTML = "";
+      document.getElementById("phaseKey").innerHTML = "";
+      document.getElementById("thisWeek").innerHTML = '<p class="empty">Set a race date above to generate the plan.</p>';
+      document.getElementById("allWeeks").innerHTML = "";
+      return;
+    }
+
+    var wks = plan.weeks, cur = plan.current, W = plan.W;
+    document.getElementById("planSummary").innerHTML =
+      "<b>" + W + " week" + (W === 1 ? "" : "s") + "</b> to race day (" + HP.esc(HP.fmtLong(P.raceDate)) + ") · " +
+      "you are in <b>week " + (cur + 1) + " of " + W + "</b>, " + HP.esc(wks[cur].phase.toLowerCase()) + " phase · " +
+      HP.esc(div.label) + " · " + (P.daysPerWeek || 5) + " days/week";
+
+    var counts = {};
+    plan.phases.forEach(function (p) { counts[p] = (counts[p] || 0) + 1; });
+    document.getElementById("phaseBar").innerHTML = wks.map(function (w, i) {
+      return '<span class="phase-seg ' + (i < cur ? "done" : i === cur ? "now" : "") + '" title="Week ' + w.n + " — " + HP.esc(w.phase) + '"></span>';
+    }).join("");
+    document.getElementById("phaseKey").innerHTML = Object.keys(counts).map(function (p) {
+      return "<span><b>" + HP.esc(p) + "</b> · " + counts[p] + " wk</span>";
+    }).join("");
+
+    var w = wks[cur];
+    document.getElementById("thisWeekTitle").textContent = "Week " + w.n + " · " + w.phase + (w.deload ? " (deload)" : "");
+    document.getElementById("thisWeekSub").innerHTML =
+      HP.esc(HP.fmtShort(w.start)) + " – " + HP.esc(HP.fmtShort(w.end)) + " · target <b>" + w.miles + " running miles</b>" +
+      (w.deload ? " · volume pulled back on purpose this week" : "") +
+      (w.sim ? " · <b>" + (w.sim === "full" ? "full race simulation" : "half simulation") + "</b> this week" : "");
+    document.getElementById("thisWeek").innerHTML = w.sessions.map(function (s, i) {
+      return sessionCard(w.n, i, s, HP.addDays(w.start, i));
+    }).join("");
+
+    document.getElementById("allWeeks").innerHTML = wks.map(function (w2, i) {
+      return '<details class="wk"' + (i === cur ? " open" : "") + ">" +
+        '<summary><span class="wk-n">Week ' + w2.n + '</span><span class="wk-phase">' + HP.esc(w2.phase) + "</span>" +
+        (i === cur ? '<span class="pill now">Now</span>' : "") +
+        (w2.deload ? '<span class="pill">Deload</span>' : "") +
+        (w2.sim ? '<span class="pill sim">' + (w2.sim === "full" ? "Full sim" : "Half sim") + "</span>" : "") +
+        '<span class="wk-meta">' + HP.esc(HP.fmtShort(w2.start)) + " – " + HP.esc(HP.fmtShort(w2.end)) + " · " + w2.miles + " mi</span></summary>" +
+        '<div class="wk-body"><div class="sessions">' +
+        w2.sessions.map(function (s, k) { return sessionCard(w2.n, k, s, HP.addDays(w2.start, k)); }).join("") +
+        "</div></div></details>";
+    }).join("");
+  }
+
+  function renderLoads(div) {
+    var l = HP.LOADS[div.loadKey];
+    document.getElementById("loadSub").innerHTML = HP.esc(div.label) +
+      (div.solo ? "" : " — doubles is <b>not</b> halved: same loads as singles of the matching gender, and mixed doubles uses the men's loads.");
+    document.getElementById("loadTable").innerHTML =
+      '<table><thead><tr><th>#</th><th>Station</th><th>Distance / reps</th><th>Load</th></tr></thead><tbody>' +
+      HP.STATIONS.map(function (st) {
+        return "<tr><td>" + st.n + "</td><td>" + HP.esc(st.name) + "</td><td>" + HP.esc(st.spec) + "</td><td>" +
+          (st.load ? HP.esc(l[st.load]) : "—") + "</td></tr>";
+      }).join("") + "</tbody></table>";
+  }
+
+  function renderBench(div) {
+    var women = div.loadKey.indexOf("women") === 0;
+    var b = women ? HP.BENCH.women : HP.BENCH.men;
+    var rows = [["Full race", b.race], ["Running (8 km total)", b.run8k], ["SkiErg", b.ski],
+      ["Sled push", b.push], ["Sled pull", b.pull], ["Burpee broad jump", b.burpee],
+      ["Row", b.row], ["Wall balls", b.balls], ["Roxzone (transitions)", b.rox]];
+    document.getElementById("benchTable").innerHTML =
+      '<table><thead><tr><th>Split</th><th class="num">Elite / average</th></tr></thead><tbody>' +
+      rows.map(function (r) { return "<tr><td>" + HP.esc(r[0]) + '</td><td class="num">' + HP.esc(r[1]) + "</td></tr>"; }).join("") +
+      "</tbody></table><p class=\"foot-note\">Showing " + (women ? "women's" : "men's") +
+      " splits. The three biggest gaps between elite and average are the <b>sled pull</b>, <b>wall balls</b> and the <b>roxzone</b> — which is why this plan hammers all three.</p>";
+  }
+
+  function renderPace(div) {
+    var d = Number(P.ttDist), sec = P.ttSec, out = document.getElementById("paceOut");
+    if (!(d > 0) || !sec) {
+      out.innerHTML = '<p class="foot-note">No time trial recorded yet. Until you have one, run at ' +
+        HP.esc(div.effort) + '.</p>';
+      return;
+    }
+    var perMi = sec / d, perKm = perMi / 1.609344;
+    var addKm = div.solo ? 12 : 6;                 // doubles runs closer to 10k effort
+    var tgtKm = perKm + addKm, tgtMi = tgtKm * 1.609344;
+    function ms(t) { return Math.floor(t / 60) + ":" + HP.pad(Math.round(t % 60)); }
+    out.innerHTML = '<table><tbody>' +
+      "<tr><td>Time-trial pace</td><td class=\"num\">" + ms(perKm) + " /km · " + ms(perMi) + " /mi</td></tr>" +
+      "<tr><td><b>Target race pace</b></td><td class=\"num\"><b>" + ms(tgtKm) + " /km · " + ms(tgtMi) + " /mi</b></td></tr>" +
+      "<tr><td>Projected 8 km running total</td><td class=\"num\">" + ms(tgtKm * 8) + "</td></tr>" +
+      "</tbody></table><p class=\"foot-note\">Race pace adds " + addKm +
+      " s/km to your time-trial pace to account for station fatigue and the stop-start of the race. " +
+      "Every <b>1 km</b> repeat in this plan means this pace.</p>";
+  }
+
+  function renderRationale() {
+    document.getElementById("rationale").innerHTML =
+      "<p>Compiled from published HYROX training plans and coaching guidance, then cut down to what they actually agree on:</p>" +
+      "<ul>" +
+      "<li><b>Phases counted back from race day</b> — foundation, build, race prep, taper. Every plan surveyed used this shape; only the week counts differed.</li>" +
+      "<li><b>Compromised running is the core session.</b> The race is 8 km run in a fatigued, stop-start state, so a weekly run-into-station session is non-negotiable.</li>" +
+      "<li><b>Two strength days, split posterior-chain and pull/grip.</b> Published guidance converges on 2–3 strength sessions a week, across rep ranges from heavy singles to 12+ reps.</li>" +
+      "<li><b>Sled pull, wall balls and roxzone get disproportionate attention</b> — the benchmark splits show those are where average athletes lose the most time to elites, not the running.</li>" +
+      "<li><b>Race pace = time-trial pace + ~12 s/km.</b> Taken from the common coaching heuristic, rather than running the 1 km repeats at 5k effort.</li>" +
+      "<li><b>Deload every fourth week</b> and a taper week before the race.</li>" +
+      "</ul>" +
+      "<p><b>Judgement calls I made:</b> the plan starts conservative because it is built for someone rebuilding a running base; the full race simulation sits at the start of race prep (not race week) so there is time to absorb it; and the 1-mile daily minimum runs underneath everything, including rest days, where a walk counts.</p>" +
+      "<p class=\"foot-note\">Sources: " +
+      '<a href="https://www.puregym.com/us/blog/hyrox-training-plan-a-free-workout-plan-to-get-hyrox-ready" target="_blank" rel="noopener">PureGym plan</a>, ' +
+      '<a href="https://roxlyfe.com/hyrox-from-average-to-elite/" target="_blank" rel="noopener">Rox Lyfe benchmark splits</a>, ' +
+      '<a href="https://www.clairenesbittcoaching.com/hyrox-tips-and-more/hyrox-pacing-amp-race-strategy" target="_blank" rel="noopener">Claire Nesbitt pacing</a>, ' +
+      '<a href="https://hyroxfitness.com/training/hyrox-stations-guide/" target="_blank" rel="noopener">station standards</a>, ' +
+      '<a href="https://roxzone.training/blog/hyrox-race-day-strategy" target="_blank" rel="noopener">roxzone strategy</a>, ' +
+      '<a href="https://roxtribe.com/resources/hyrox-doubles-weights" target="_blank" rel="noopener">doubles weights</a>. ' +
+      "General training guidance, not medical or coaching advice — scale it to how you actually feel.</p>";
+  }
+
+  /* ============ events ============ */
+  var sel = document.getElementById("division");
+  sel.innerHTML = Object.keys(HP.DIVISIONS).map(function (k) {
+    return '<option value="' + k + '">' + HP.esc(HP.DIVISIONS[k].label) + "</option>";
+  }).join("");
+
+  function bind(id, key, cast) {
+    document.getElementById(id).addEventListener("change", function (e) {
+      if (!HP.canEdit()) { fill(); return; }
+      P[key] = cast ? cast(e.target.value) : e.target.value; HP.save(); HP.emit();
+    });
+  }
+  bind("division", "division");
+  bind("trRaceDate", "raceDate");
+  bind("daysWk", "daysPerWeek", Number);
+  bind("runBase", "runBase");
+
+  document.getElementById("ttDist").addEventListener("change", function (e) {
+    if (!HP.canEdit()) { fill(); return; }
+    P.ttDist = Number(e.target.value); HP.save(); render();
+  });
+  document.getElementById("ttTime").addEventListener("change", function (e) {
+    if (!HP.canEdit()) { fill(); return; }
+    P.ttSec = HP.parseTime(e.target.value); HP.save(); render();
+  });
+
+  document.body.addEventListener("change", function (e) {
+    var cb = e.target.closest("input[data-done]"); if (!cb) return;
+    if (!HP.canEdit()) { cb.checked = !cb.checked; return; }
+    if (cb.checked) P.done[cb.dataset.done] = true; else delete P.done[cb.dataset.done];
+    HP.save(); render();
+  });
+
+
+  function fill() {
+    document.getElementById("division").value = P.division;
+    document.getElementById("trRaceDate").value = P.raceDate || "";
+    document.getElementById("daysWk").value = String(P.daysPerWeek || 5);
+    document.getElementById("runBase").value = P.runBase || "low";
+    document.getElementById("ttDist").value = P.ttDist || "";
+    document.getElementById("ttTime").value = P.ttSec ? HP.fmtDur(P.ttSec) : "";
+  }
+
+  HP.onChange(function () { reseat(); fill(); render(); });
+  fill();
+  render();
+})();
+</script>
+
+<script>
+/* ============ shell: athlete bar, view switching, store startup ============ */
+(function () {
+  "use strict";
+  var views = { tracker: document.getElementById("viewTracker"),
+                training: document.getElementById("viewTraining") };
+  var tabs = document.querySelectorAll("button.tab");
+
+  function show(v) {
+    Object.keys(views).forEach(function (k) { views[k].classList.toggle("hidden", k !== v); });
+    Array.prototype.forEach.call(tabs, function (b) {
+      if (b.dataset.view === v) b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
+    HP.state.view = v; HP.savePrefs();
+    HP.emit();   // charts need a real container width once their view is visible
+  }
+  Array.prototype.forEach.call(tabs, function (b) {
+    b.addEventListener("click", function () { show(b.dataset.view); });
+  });
+
+  var banner = document.getElementById("lockBanner");
+
+  function applyLock() {
+    var st = HP.status(), can = HP.canEdit(), me = HP.owned(), cur = HP.active();
+    document.body.classList.toggle("readonly", !can);
+
+    Object.keys(views).forEach(function (k) {
+      var nodes = views[k].querySelectorAll("input, select, textarea, button[type=submit]");
+      Array.prototype.forEach.call(nodes, function (el) { el.disabled = !can; });
+    });
+
+    // Import rewrites the whole roster, so it stays out of the shared app
+    var imp = document.getElementById("btnImport");
+    if (imp) imp.classList.toggle("hidden", st.mode === "shared");
+
+    if (can || st.mode !== "shared") { banner.classList.add("hidden"); return; }
+    banner.classList.remove("hidden");
+    banner.innerHTML = me
+      ? '<span class="grow">Read-only \u2014 this is <b>' + HP.esc(cur.name) +
+        "</b>'s log. You're logged in as <b>" + HP.esc(me.name) + "</b>.</span>" +
+        '<button type="button" id="lbMine" class="primary">Go to my log</button>'
+      : '<span class="grow">Pick your own name in the athlete bar above and choose ' +
+        "<b>This is me</b> \u2014 then you can log runs. Until then everything is read-only.</span>";
+    var b = document.getElementById("lbMine");
+    if (b) b.addEventListener("click", function () {
+      HP.state.activeProfile = HP.state.ownedId; HP.savePrefs(); HP.emit();
+    });
+  }
+
+  HP.init(function () {
+    HP.applyTheme();
+    HP.mountProfileBar(document.getElementById("profileBar"), HP.emit);
+    HP.onChange(applyLock);          // registered last, so it runs after both views repaint
+    show(views[HP.state.view] ? HP.state.view : "tracker");
+  });
+})();
+</script>
+<script>
+/* Register the service worker so the app opens offline from the home screen.
+   Skipped on file:// where service workers are unavailable. */
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
