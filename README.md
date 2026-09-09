@@ -62,6 +62,26 @@ and publish the remainder as an artifact with the `db` and `downloads`
 capabilities. This file stays the source of truth; the artifact is generated
 from it.
 
-**Export JSON** / **Import** moves a roster between the two.
+**Export JSON** / **Import** moves a roster between the two. Import is hidden in
+shared mode, because it rewrites the whole roster.
+
+## Who can edit what
+
+In shared mode each person **claims** their own athlete once, on their own
+device ("This is me" in the athlete bar). From then on:
+
+- their own athlete is editable
+- every other athlete is **read-only** - inputs disabled, log/delete controls
+  hidden, and a banner naming whose log they are looking at
+- the claim is a per-viewer preference, so it never moves anyone else's
+
+This is a guard against people editing each other's logs by accident, **not a
+security boundary**. Enforcing it server-side needs the viewer's identity (the
+`user` capability), which is not available to this deployment, so a determined
+person with devtools could still write another athlete's document. Everyone with
+the link can also still read every athlete - which is the point for a training
+group.
+
+To limit who can open it at all, use the artifact's own Share menu.
 
 General training guidance — not medical or coaching advice.
