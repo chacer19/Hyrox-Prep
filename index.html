@@ -219,6 +219,29 @@ tbody tr:hover { background: var(--ghost); }
 .shoe-note { font-size: 11.5px; color: var(--text-secondary); margin-top: 8px; line-height: 1.45; }
 .shoe-note.grip { color: var(--serious); }
 
+/* leaderboard */
+.rank { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 650; width: 1%; white-space: nowrap; }
+tr.you { background: var(--series-1-wash); }
+tr.you .lb-name::after {
+  content: "you"; margin-left: 7px; font-size: 10px; font-weight: 650;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--series-1);
+}
+.lb-name { font-weight: 600; }
+.lb-sub { display: block; font-weight: 400; font-size: 11.5px; color: var(--text-secondary); }
+.lb-bar { display: block; width: 100%; min-width: 60px; height: 5px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.lb-bar > span { display: block; height: 100%; background: var(--series-1); border-radius: 3px; }
+.team-now { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.team-badge {
+  font-size: 15px; font-weight: 650; padding: 6px 14px; border-radius: 20px;
+  background: var(--series-1-wash); color: var(--series-1); border: 1px solid var(--series-1);
+}
+.team-join { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.team-chip {
+  border: 1px solid var(--border); background: var(--page); border-radius: 20px;
+  padding: 5px 12px; font-size: 12.5px; cursor: pointer; font-weight: 550;
+}
+.team-chip:hover { background: var(--ghost); }
+
 /* race finder */
 a.ext { color: var(--series-1); text-decoration: none; font-weight: 550; font-size: 13px; white-space: nowrap; }
 a.ext:hover { text-decoration: underline; }
@@ -242,6 +265,9 @@ a.ext:hover { text-decoration: underline; }
   .race { grid-template-columns: 1fr auto; row-gap: 4px; }
   .race-when { grid-column: 1; }
 }
+
+.shoe.retired { opacity: .62; }
+.shoe-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 
 /* inline delete confirmation */
 .del-cell { white-space: nowrap; }
@@ -399,6 +425,7 @@ nav.tabs button.tab[aria-current="page"] {
       <button type="button" class="tab" data-view="tracker">Mile tracker</button>
       <button type="button" class="tab" data-view="training">Training plan</button>
       <button type="button" class="tab" data-view="races">Races</button>
+      <button type="button" class="tab" data-view="team">Team</button>
     </nav>
     <div class="actions">
       <button id="btnExport" class="ghost">Export JSON</button>
@@ -526,10 +553,23 @@ nav.tabs button.tab[aria-current="page"] {
   <section class="card">
     <div class="card-head">
       <div>
-        <h2>Shoe mileage</h2>
-        <p class="sub">When to retire each pair, based on what the shoe is and how you use it — not one number for everything.</p>
+        <h2>The closet</h2>
+        <p class="sub">Your rotation, and when to retire each pair — based on what the shoe is and how you use it, not one number for everything.</p>
       </div>
     </div>
+    <form id="closetForm" class="row log-grid" style="margin-bottom:16px;">
+      <label class="field">Add a pair
+        <input type="text" id="czName" placeholder="e.g. Nike Pegasus 41" autocomplete="off">
+      </label>
+      <label class="field">Type
+        <select id="czType"></select>
+      </label>
+      <label class="field">Miles already on them
+        <input type="number" id="czStart" min="0" step="1" placeholder="0">
+      </label>
+      <button type="submit" class="primary" style="height:34px;">Add to closet</button>
+    </form>
+    <p class="foot-note" id="czHint" style="margin-top:-8px;"></p>
     <div class="table-scroll" id="shoeTable"></div>
   </section>
 
@@ -545,6 +585,46 @@ nav.tabs button.tab[aria-current="page"] {
   </section>
 
   <p class="foot-note" id="storeNote"></p>
+  </div>
+
+  <div id="viewTeam" class="hidden">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Your team</h2>
+          <p class="sub">Teams are just a name everyone types the same way. Create one and share the name, or join one already here.</p>
+        </div>
+      </div>
+      <div id="teamMine"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Team leaderboard</h2>
+          <p class="sub" id="boardSub"></p>
+        </div>
+        <label class="field" style="min-width:170px;">Rank by
+          <select id="boardSort">
+            <option value="miles">Total miles</option>
+            <option value="pct">Days at goal</option>
+            <option value="streak">Best streak</option>
+            <option value="banked">Miles banked</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-scroll" id="teamBoard"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Individual leaderboard</h2>
+          <p class="sub">Everyone on the roster, ranked the same way.</p>
+        </div>
+      </div>
+      <div class="table-scroll" id="soloBoard"></div>
+    </section>
   </div>
 
   <div id="viewRaces" class="hidden">
@@ -639,11 +719,14 @@ nav.tabs button.tab[aria-current="page"] {
   <section class="card">
     <div class="card-head">
       <div>
-        <h2>Run pace targets</h2>
-        <p class="sub">Run a hard-but-sustainable 15–20 min time trial, enter it here, and the plan's race pace is set from it.</p>
+        <h2>Target time &amp; pacing</h2>
+        <p class="sub">Set a finish time and the plan paces itself from it. A time trial is the reality check: it says whether the target is in reach.</p>
       </div>
     </div>
     <div class="row setup-grid">
+      <label class="field">Target finish time (h:mm:ss)
+        <input type="text" id="tgTime" placeholder="1:15:00" autocomplete="off">
+      </label>
       <label class="field">Time trial distance (mi)
         <input type="number" id="ttDist" step="0.01" min="0.5" placeholder="2.20">
       </label>
@@ -652,6 +735,7 @@ nav.tabs button.tab[aria-current="page"] {
       </label>
     </div>
     <div id="paceOut" style="margin-top:14px;"></div>
+    <div class="table-scroll" id="splitOut" style="margin-top:16px;"></div>
   </section>
 
   <section class="two-col">
@@ -782,6 +866,47 @@ nav.tabs button.tab[aria-current="page"] {
       row: "—", balls: "3:50 / 6:20", rox: "3:47 / 6:12"
     }
   };
+
+  /* Same published splits as BENCH, in seconds, so a target time can be turned
+     into per-station targets. Women's row split is absent from the source table;
+     the pair below is an ESTIMATE and is labelled as such in the UI. */
+  var BENCH_SEC = {
+    men: {
+      run8k: [1846, 2546], ski: [227, 257], push: [165, 220], pull: [194, 391],
+      burpee: [141, 315], row: [238, 275], balls: [265, 458], rox: [174, 418],
+      race: [3530, 5354]
+    },
+    women: {
+      run8k: [2067, 2649], ski: [252, 291], push: [180, 228], pull: [234, 396],
+      burpee: [191, 293], row: [245, 285], balls: [230, 380], rox: [227, 372],
+      race: [3982, 5411]
+    }
+  };
+  var SPLIT_ORDER = [
+    ["run8k", "Running (8 \u00d7 1 km)"], ["ski", "SkiErg"], ["push", "Sled push"],
+    ["pull", "Sled pull"], ["burpee", "Burpee broad jump"], ["row", "Row"],
+    ["balls", "Wall balls"], ["rox", "Roxzone (transitions)"]
+  ];
+
+  /* Turn a target finish time into per-station targets: place the target between
+     the elite and average profiles, interpolate every split at that position,
+     then scale so the parts add up to the target exactly. */
+  function targetSplits(targetSec, women) {
+    var B = women ? BENCH_SEC.women : BENCH_SEC.men;
+    var lo = B.race[0], hi = B.race[1];
+    var t = (targetSec - lo) / (hi - lo);          // 0 = elite, 1 = average
+    var raw = {}, sum = 0;
+    SPLIT_ORDER.forEach(function (k) {
+      var pair = B[k[0]];
+      var v = pair[0] + (pair[1] - pair[0]) * t;   // extrapolates past either end
+      if (v < 1) v = 1;
+      raw[k[0]] = v; sum += v;
+    });
+    var scale = targetSec / sum, out = {};
+    SPLIT_ORDER.forEach(function (k) { out[k[0]] = raw[k[0]] * scale; });
+    out._pos = t; out._scale = scale;
+    return out;
+  }
 
   /* ============ race calendar ============
      Snapshot of the 2026/27 season compiled 2026-09-09 from secondary sources —
@@ -943,7 +1068,7 @@ nav.tabs button.tab[aria-current="page"] {
       id: id || newId(), name: name || "Athlete", division: "open-men",
       raceName: "", raceDate: "", planStart: "", dailyGoal: 1, shoeLimit: 400,
       daysPerWeek: 5, runBase: "low", ttDist: 0, ttSec: null,
-      runs: [], done: {}, shoeSpecs: {}
+      runs: [], done: {}, shoeSpecs: {}, team: "", targetTime: null
     };
   }
   function normalize(id, v) {
@@ -966,6 +1091,53 @@ nav.tabs button.tab[aria-current="page"] {
   var state = { profiles: {}, activeProfile: "", ownedId: "", theme: "", view: "tracker" };
   var mode = "local", db = null, ready = false, lastError = "";
   var writeState = "idle";        // idle | saving | saved | error
+
+  /* A compact read-only summary of any athlete — the leaderboard needs figures
+     for people other than the one currently selected. */
+  function summary(p) {
+    var g = Number(p.dailyGoal) > 0 ? Number(p.dailyGoal) : 1;
+    var today = todayISO();
+    var days = {}, miles = 0, sec = 0, timed = 0;
+    (p.runs || []).forEach(function (r) {
+      var m = Number(r.miles) || 0;
+      miles += m;
+      days[r.date] = (days[r.date] || 0) + m;
+      if (r.seconds != null) { sec += r.seconds; timed += m; }
+    });
+    var keys = Object.keys(days).sort();
+    var start = p.planStart || keys[0] || today;
+    var asOf = p.raceDate && dayDiff(p.raceDate, today) > 0 ? p.raceDate : today;
+    var elapsed = dayDiff(start, today) < 0 ? 0 : Math.max(0, dayDiff(start, asOf) + 1);
+    var hit = keys.filter(function (k) {
+      return days[k] >= g - 1e-9 && dayDiff(start, k) >= 0 && dayDiff(k, asOf) >= 0;
+    }).length;
+
+    var streak = 0, cursor = today;
+    if (!days[today] || days[today] < g) cursor = addDays(today, -1);
+    while (days[cursor] && days[cursor] >= g - 1e-9) { streak++; cursor = addDays(cursor, -1); }
+
+    return {
+      id: p.id, name: p.name, team: (p.team || "").trim(),
+      division: p.division, miles: miles, runs: (p.runs || []).length,
+      elapsed: elapsed, hit: hit,
+      pct: elapsed > 0 ? (hit / elapsed) * 100 : 0,
+      streak: streak, banked: miles - elapsed * g,
+      pace: timed ? sec / timed : null,
+      lastRun: keys.length ? keys[keys.length - 1] : ""
+    };
+  }
+
+  function teams() {
+    var by = {};
+    Object.keys(state.profiles).forEach(function (id) {
+      var p = state.profiles[id], name = (p.team || "").trim();
+      if (!name) return;
+      var key = name.toLowerCase();
+      if (!by[key]) by[key] = { key: key, name: name, members: [] };
+      by[key].members.push(summary(p));
+    });
+    return by;
+  }
 
   /* ============ per-viewer preferences (never shared) ============ */
   function loadPrefs() {
@@ -1257,6 +1429,8 @@ nav.tabs button.tab[aria-current="page"] {
     RACES: RACES, RACE_SNAPSHOT: RACE_SNAPSHOT, RACE_SOURCE: RACE_SOURCE,
     init: init, save: save, active: active, status: status,
     owned: owned, claim: claim, canEdit: canEdit, paintStatus: paintStatus,
+    summary: summary, teams: teams, targetSplits: targetSplits,
+    BENCH_SEC: BENCH_SEC, SPLIT_ORDER: SPLIT_ORDER,
     blankProfile: blankProfile, addAthlete: addAthlete, removeAthlete: removeAthlete,
     replaceAll: replaceAll, savePrefs: savePrefs,
     applyTheme: applyTheme, cycleTheme: cycleTheme, mountProfileBar: mountProfileBar,
@@ -1592,9 +1766,22 @@ nav.tabs button.tab[aria-current="page"] {
       if (r.date < sh.first) sh.first = r.date;
     });
 
+    // every pair in the closet shows up, run in or not
+    Object.keys(state.shoeSpecs || {}).forEach(function (k) {
+      if (shoes[k]) return;
+      var sp = state.shoeSpecs[k];
+      shoes[k] = { key: k, name: sp.name || k, unspec: false, miles: 0, runs: 0,
+                   sec: 0, timed: 0, recent: 0, last: "", first: "" };
+    });
+
     var fallback = Number(state.shoeLimit) > 0 ? Number(state.shoeLimit) : 400;
     var list = Object.keys(shoes).map(function (k) { return shoes[k]; })
-                     .sort(function (a, b) { return b.miles - a.miles; });
+      .sort(function (a, b) {
+        var ra = (state.shoeSpecs[a.key] || {}).retired ? 1 : 0;
+        var rb = (state.shoeSpecs[b.key] || {}).retired ? 1 : 0;
+        if (ra !== rb) return ra - rb;            // retired pairs sink
+        return b.miles - a.miles;
+      });
 
     document.getElementById("shoeTable").innerHTML = list.length
       ? '<div class="shoe-grid">' + list.map(function (sh) {
@@ -1635,9 +1822,12 @@ nav.tabs button.tab[aria-current="page"] {
                    esc(HP.SHOE_TYPES[k].label) + "</option>";
           }).join("");
 
-          return '<div class="shoe">' +
+          var retired = !!spec.retired;
+          return '<div class="shoe' + (retired ? " retired" : "") + '">' +
             '<div class="shoe-top"><h3>' + esc(sh.name) + "</h3>" +
-            (sh.unspec ? "" : '<span class="status"><span class="dot" style="background:' + col + '"></span>' + label + "</span>") +
+            (sh.unspec ? ""
+              : retired ? '<span class="pill">Retired</span>'
+              : '<span class="status"><span class="dot" style="background:' + col + '"></span>' + label + "</span>") +
             "</div>" +
             '<div class="shoe-mi"><b>' + mi(total) + "</b> mi" +
             (startMi ? " total" : "") +
@@ -1646,7 +1836,7 @@ nav.tabs button.tab[aria-current="page"] {
             (hi ? '<span class="meter ' + cls + '"><span style="width:' + pct.toFixed(1) + '%"></span></span>' : "") +
             '<div class="shoe-facts">' + sh.runs + " run" + (sh.runs === 1 ? "" : "s") +
             (sh.timed ? " \u00b7 " + fmtPace(sh.sec, sh.timed) + "/mi avg" : "") +
-            " \u00b7 last worn " + esc(fmtShort(sh.last)) + "</div>" +
+            (sh.last ? " \u00b7 last worn " + esc(fmtShort(sh.last)) : " \u00b7 not worn yet") + "</div>" +
             (sh.unspec ? '<div class="shoe-note">Runs logged without a shoe name.</div>' :
               '<div class="shoe-spec">' +
                 '<label class="field">Type<select data-shoe-type="' + esc(sh.key) + '">' + opts + "</select></label>" +
@@ -1657,7 +1847,14 @@ nav.tabs button.tab[aria-current="page"] {
               "</div>" +
               (proj ? '<div class="shoe-note">' + proj + "</div>" : "") +
               (typed && t.note ? '<div class="shoe-note">' + t.note + "</div>" : "") +
-              (spec.sled ? '<div class="shoe-note grip">Sled push wears the outsole before the midsole \u2014 check the tread for grip before race day, whatever the mileage says.</div>' : "")
+              (spec.sled && !retired ? '<div class="shoe-note grip">Sled push wears the outsole before the midsole \u2014 check the tread for grip before race day, whatever the mileage says.</div>' : "") +
+              '<div class="shoe-actions">' +
+                '<button type="button" class="icon" data-shoe-retire="' + esc(sh.key) + '">' +
+                  (retired ? "Put back in rotation" : "Retire") + "</button>" +
+                (sh.runs === 0
+                  ? '<button type="button" class="icon" data-shoe-drop="' + esc(sh.key) + '">Remove</button>'
+                  : "") +
+              "</div>"
             ) +
             "</div>";
         }).join("") + "</div>" +
@@ -1666,7 +1863,7 @@ nav.tabs button.tab[aria-current="page"] {
       : '<p class="empty">No shoes recorded yet \u2014 add them when you log a run.</p>';
 
     var dl = document.getElementById("shoeList");
-    dl.innerHTML = list.filter(function (sh) { return !sh.unspec; })
+    dl.innerHTML = list.filter(function (sh) { return !sh.unspec && !(state.shoeSpecs[sh.key] || {}).retired; })
       .map(function (sh) { return '<option value="' + esc(sh.name) + '">'; }).join("");
 
     // --- run log ---
@@ -1804,6 +2001,43 @@ nav.tabs button.tab[aria-current="page"] {
     save(); render();
   });
 
+  document.getElementById("czType").innerHTML = Object.keys(HP.SHOE_TYPES).map(function (k) {
+    return '<option value="' + k + '">' + esc(HP.SHOE_TYPES[k].label) + "</option>";
+  }).join("");
+
+  document.getElementById("closetForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var hint = document.getElementById("czHint");
+    if (!HP.canEdit()) return;
+    var name = document.getElementById("czName").value.trim();
+    if (!name) { hint.textContent = "Give the pair a name first."; return; }
+    var key = name.toLowerCase();
+    if (!state.shoeSpecs) state.shoeSpecs = {};
+    if (state.shoeSpecs[key]) { hint.textContent = esc(name) + " is already in the closet."; return; }
+    state.shoeSpecs[key] = {
+      name: name,
+      type: document.getElementById("czType").value,
+      start: Math.max(0, Number(document.getElementById("czStart").value) || 0),
+      sled: false, retired: false
+    };
+    hint.textContent = name + " added. Type its name in the Shoes field when you log a run.";
+    document.getElementById("czName").value = "";
+    document.getElementById("czStart").value = "";
+    save(); render();
+  });
+
+  document.getElementById("shoeTable").addEventListener("click", function (e) {
+    var ret = e.target.closest("button[data-shoe-retire]");
+    var drop = e.target.closest("button[data-shoe-drop]");
+    if (!ret && !drop) return;
+    if (!HP.canEdit()) return;
+    var key = (ret || drop).dataset.shoeRetire || (ret || drop).dataset.shoeDrop;
+    if (!state.shoeSpecs[key]) return;
+    if (ret) state.shoeSpecs[key].retired = !state.shoeSpecs[key].retired;
+    else delete state.shoeSpecs[key];
+    save(); render();
+  });
+
   document.getElementById("shoeTable").addEventListener("change", function (e) {
     var el = e.target, d = el.dataset || {};
     var key = d.shoeType !== undefined ? d.shoeType
@@ -1812,7 +2046,7 @@ nav.tabs button.tab[aria-current="page"] {
     if (key === null) return;
     if (!HP.canEdit()) { render(); return; }
     if (!state.shoeSpecs) state.shoeSpecs = {};
-    var spec = state.shoeSpecs[key] || (state.shoeSpecs[key] = {});
+    var spec = state.shoeSpecs[key] || (state.shoeSpecs[key] = { name: key });
     if (d.shoeType !== undefined) spec.type = el.value;
     else if (d.shoeStart !== undefined) spec.start = Math.max(0, Number(el.value) || 0);
     else spec.sled = el.checked;
@@ -1949,6 +2183,27 @@ nav.tabs button.tab[aria-current="page"] {
     return Math.round(v * 2) / 2;
   }
 
+  /* The pace every 1 km repeat in the plan refers to. A target time wins: it is
+     what the athlete is actually training for. Otherwise fall back to the time
+     trial plus the usual station-fatigue allowance. */
+  function planPace() {
+    var div = HP.DIVISIONS[P.division], women = div.loadKey.indexOf("women") === 0;
+    if (P.targetTime > 0) {
+      var sp = HP.targetSplits(P.targetTime, women);
+      return { perKm: sp.run8k / 8, source: "target" };
+    }
+    if (P.ttDist > 0 && P.ttSec) {
+      var perKm = (P.ttSec / P.ttDist) / 1.609344;
+      return { perKm: perKm + (div.solo ? 12 : 6), source: "trial" };
+    }
+    return null;
+  }
+  function ms(t) { return Math.floor(t / 60) + ":" + HP.pad(Math.round(t % 60)); }
+  function paceStr() {
+    var pp = planPace();
+    return pp ? " (" + ms(pp.perKm) + "/km)" : "";
+  }
+
   /* ============ session content ============ */
   function L() { return HP.LOADS[HP.DIVISIONS[P.division].loadKey]; }
 
@@ -2013,16 +2268,16 @@ nav.tabs button.tab[aria-current="page"] {
            "Stay honest — this is effort-based, not pace-chasing"];
     else if (phase === "Build")
       b = ["Warm up 10 min easy",
-           "<b>" + Math.min(6, 3 + wk) + " × 1 km</b> @ target race pace, 400 m jog between",
+           "<b>" + Math.min(6, 3 + wk) + " × 1 km</b> @ target race pace" + paceStr() + ", 400 m jog between",
            "Cool down 10 min",
            "The 1 km repeat is the race's whole running unit — learn what it feels like"];
     else if (phase === "Race prep")
       b = ["Warm up 10 min",
-           "<b>6 × 1 km</b> @ race pace, 200 m jog — short recovery on purpose",
+           "<b>6 × 1 km</b> @ race pace" + paceStr() + ", 200 m jog — short recovery on purpose",
            "Cool down 10 min",
            "Recovery is deliberately short: this is the rhythm of the actual race"];
     else
-      b = ["Warm up 10 min", "<b>3 × 1 km</b> @ race pace, full recovery", "Cool down 10 min"];
+      b = ["Warm up 10 min", "<b>3 × 1 km</b> @ race pace" + paceStr() + ", full recovery", "Cool down 10 min"];
     return { type: "Run — quality", title: "Interval session", blocks: b };
   }
 
@@ -2050,7 +2305,7 @@ nav.tabs button.tab[aria-current="page"] {
            "Rotate a different station each week so you cover all 8 across the block",
            "Jog the transitions — treat the walk to the station as part of the workout"];
     } else if (phase === "Race prep") {
-      b = ["<b>4 × (1 km @ race pace + station at race load)</b>",
+      b = ["<b>4 × (1 km @ race pace" + paceStr() + " + station at race load)</b>",
            "Pick the four stations you are slowest at",
            "Jog transitions, time them"];
     } else {
@@ -2222,23 +2477,70 @@ nav.tabs button.tab[aria-current="page"] {
   }
 
   function renderPace(div) {
-    var d = Number(P.ttDist), sec = P.ttSec, out = document.getElementById("paceOut");
-    if (!(d > 0) || !sec) {
-      out.innerHTML = '<p class="foot-note">No time trial recorded yet. Until you have one, run at ' +
-        HP.esc(div.effort) + '.</p>';
-      return;
+    var out = document.getElementById("paceOut"), splitEl = document.getElementById("splitOut");
+    var women = div.loadKey.indexOf("women") === 0;
+    var pp = planPace();
+    var trialKm = (P.ttDist > 0 && P.ttSec) ? (P.ttSec / P.ttDist) / 1.609344 : null;
+
+    var rows = [];
+    if (trialKm) rows.push(["Time-trial pace", ms(trialKm) + " /km · " + ms(trialKm * 1.609344) + " /mi", false]);
+    if (P.targetTime > 0) rows.push(["Target finish", HP.fmtDur(P.targetTime), true]);
+    if (pp) {
+      rows.push(["Race pace the plan uses", ms(pp.perKm) + " /km · " + ms(pp.perKm * 1.609344) + " /mi", true]);
+      rows.push(["Projected 8 km running total", ms(pp.perKm * 8), false]);
     }
-    var perMi = sec / d, perKm = perMi / 1.609344;
-    var addKm = div.solo ? 12 : 6;                 // doubles runs closer to 10k effort
-    var tgtKm = perKm + addKm, tgtMi = tgtKm * 1.609344;
-    function ms(t) { return Math.floor(t / 60) + ":" + HP.pad(Math.round(t % 60)); }
-    out.innerHTML = '<table><tbody>' +
-      "<tr><td>Time-trial pace</td><td class=\"num\">" + ms(perKm) + " /km · " + ms(perMi) + " /mi</td></tr>" +
-      "<tr><td><b>Target race pace</b></td><td class=\"num\"><b>" + ms(tgtKm) + " /km · " + ms(tgtMi) + " /mi</b></td></tr>" +
-      "<tr><td>Projected 8 km running total</td><td class=\"num\">" + ms(tgtKm * 8) + "</td></tr>" +
-      "</tbody></table><p class=\"foot-note\">Race pace adds " + addKm +
-      " s/km to your time-trial pace to account for station fatigue and the stop-start of the race. " +
-      "Every <b>1 km</b> repeat in this plan means this pace.</p>";
+
+    var note;
+    if (!pp) {
+      note = "Set a target finish time, or enter a time trial. Until then, run at " + HP.esc(div.effort) + ".";
+    } else if (pp.source === "target") {
+      note = "Every <b>1 km</b> repeat in the plan means this pace, derived from your target finish.";
+      if (trialKm) {
+        var gap = pp.perKm - (trialKm + (div.solo ? 12 : 6));
+        note += gap < -20
+          ? " <b>Your target needs " + ms(-gap) + "/km more than your time trial suggests you have</b> — that is a big ask. Either give it more weeks, or ease the target."
+          : gap < -5
+            ? " That is a little quicker than your time trial implies — reachable, but it will hurt."
+            : gap > 25
+              ? " Your time trial says you already have more than this. Consider a sharper target."
+              : " Your time trial lines up with this target.";
+      } else {
+        note += " Run a 15–20 min time trial to check the target is realistic.";
+      }
+    } else {
+      note = "Race pace adds " + (div.solo ? 12 : 6) +
+        " s/km to your time-trial pace for station fatigue and the stop-start of the race. " +
+        "Set a target finish time to pace the plan from the result you actually want.";
+    }
+
+    out.innerHTML = (rows.length
+      ? "<table><tbody>" + rows.map(function (r) {
+          return "<tr><td>" + (r[2] ? "<b>" + r[0] + "</b>" : r[0]) +
+                 '</td><td class="num">' + (r[2] ? "<b>" + r[1] + "</b>" : r[1]) + "</td></tr>";
+        }).join("") + "</tbody></table>"
+      : "") + '<p class="foot-note">' + note + "</p>";
+
+    if (!(P.targetTime > 0)) { splitEl.innerHTML = ""; return; }
+
+    var sp = HP.targetSplits(P.targetTime, women);
+    var B = women ? HP.BENCH_SEC.women : HP.BENCH_SEC.men;
+    splitEl.innerHTML =
+      '<table><thead><tr><th>Split</th><th class="num">Your target</th><th class="num">Elite</th><th class="num">Average</th></tr></thead><tbody>' +
+      HP.SPLIT_ORDER.map(function (k) {
+        var key = k[0], v = sp[key], pair = B[key];
+        return "<tr><td>" + HP.esc(k[1]) + '</td><td class="num"><b>' + ms(v) + "</b></td>" +
+          '<td class="num">' + ms(pair[0]) + '</td><td class="num">' + ms(pair[1]) + "</td></tr>";
+      }).join("") +
+      '<tr><td><b>Total</b></td><td class="num"><b>' + HP.fmtDur(P.targetTime) + "</b></td>" +
+      '<td class="num">' + HP.fmtDur(B.race[0]) + '</td><td class="num">' + HP.fmtDur(B.race[1]) + "</td></tr>" +
+      "</tbody></table>" +
+      '<p class="foot-note">Your target sits ' +
+      (sp._pos <= 0 ? "at or beyond the elite profile"
+        : sp._pos >= 1 ? "beyond the average profile"
+        : Math.round((1 - sp._pos) * 100) + "% of the way from average toward elite") +
+      ", so each split is interpolated at that point and then scaled to add up to your target exactly." +
+      (women ? " The women's row split is absent from the published table; the figures here use an estimate for it." : "") +
+      "</p>";
   }
 
   function renderRationale() {
@@ -2280,6 +2582,12 @@ nav.tabs button.tab[aria-current="page"] {
   bind("daysWk", "daysPerWeek", Number);
   bind("runBase", "runBase");
 
+  document.getElementById("tgTime").addEventListener("change", function (e) {
+    if (!HP.canEdit()) { fill(); return; }
+    var v = e.target.value.trim();
+    P.targetTime = v ? HP.parseTime(v) : null;
+    HP.save(); HP.emit();
+  });
   document.getElementById("ttDist").addEventListener("change", function (e) {
     if (!HP.canEdit()) { fill(); return; }
     P.ttDist = Number(e.target.value); HP.save(); render();
@@ -2302,6 +2610,7 @@ nav.tabs button.tab[aria-current="page"] {
     document.getElementById("trRaceDate").value = P.raceDate || "";
     document.getElementById("daysWk").value = String(P.daysPerWeek || 5);
     document.getElementById("runBase").value = P.runBase || "low";
+    document.getElementById("tgTime").value = P.targetTime ? HP.fmtDur(P.targetTime) : "";
     document.getElementById("ttDist").value = P.ttDist || "";
     document.getElementById("ttTime").value = P.ttSec ? HP.fmtDur(P.ttSec) : "";
   }
@@ -2412,12 +2721,154 @@ nav.tabs button.tab[aria-current="page"] {
 </script>
 
 <script>
+/* ============ teams & leaderboard ============
+   A team is just a name held on each athlete, matched case-insensitively.
+   No separate collection: a team exists exactly as long as someone is on it,
+   and the roster subscription already carries everything the board needs. */
+(function () {
+  "use strict";
+  var P = HP.active();
+  function reseat() { P = HP.active(); }
+  var sortKey = "miles";
+
+  var LABELS = { miles: "Total miles", pct: "Days at goal", streak: "Best streak", banked: "Miles banked" };
+
+  function fmtMetric(v, key) {
+    if (key === "pct") return Math.round(v) + "%";
+    if (key === "streak") return Math.round(v) + (Math.round(v) === 1 ? " day" : " days");
+    if (key === "banked") return HP.signed(v);
+    return HP.mi(v);
+  }
+
+  function renderMine() {
+    var el = document.getElementById("teamMine");
+    var mine = (P.team || "").trim();
+    var all = HP.teams();
+    var names = Object.keys(all).map(function (k) { return all[k].name; }).sort();
+    var editable = HP.canEdit();
+
+    if (mine) {
+      var t = all[mine.toLowerCase()];
+      var n = t ? t.members.length : 1;
+      el.innerHTML = '<div class="team-now"><span class="team-badge">' + HP.esc(mine) + "</span>" +
+        '<span class="sub">' + n + " athlete" + (n === 1 ? "" : "s") +
+        (n === 1 ? " \u2014 share the name so others can join." : " on this team.") + "</span>" +
+        (editable ? '<button type="button" id="tmLeave" class="ghost" style="margin-left:auto;">Leave team</button>' : "") +
+        "</div>";
+      if (editable) document.getElementById("tmLeave").addEventListener("click", function () {
+        P.team = ""; HP.save(); HP.emit();
+      });
+      return;
+    }
+
+    if (!editable) {
+      el.innerHTML = '<p class="empty">' + HP.esc(P.name || "This athlete") +
+        " isn't on a team. Only they can join one.</p>";
+      return;
+    }
+
+    el.innerHTML =
+      '<div class="row log-grid"><label class="field">Team name' +
+      '<input type="text" id="tmName" placeholder="e.g. Atlas Barbell" autocomplete="off"></label>' +
+      '<button type="button" id="tmJoin" class="primary" style="height:34px;">Create or join</button></div>' +
+      (names.length
+        ? '<p class="foot-note" style="margin-top:12px;">Already here \u2014 tap to join:</p><div class="team-join">' +
+          names.map(function (nm) {
+            return '<button type="button" class="team-chip" data-team="' + HP.esc(nm) + '">' + HP.esc(nm) + "</button>";
+          }).join("") + "</div>"
+        : '<p class="foot-note" style="margin-top:12px;">No teams yet \u2014 create the first one.</p>');
+
+    function join(name) {
+      name = (name || "").trim();
+      if (!name) return;
+      // reuse the existing capitalisation if the team already exists
+      var hit = HP.teams()[name.toLowerCase()];
+      P.team = hit ? hit.name : name;
+      HP.save(); HP.emit();
+    }
+    document.getElementById("tmJoin").addEventListener("click", function () {
+      join(document.getElementById("tmName").value);
+    });
+    document.getElementById("tmName").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); join(e.target.value); }
+    });
+    Array.prototype.forEach.call(el.querySelectorAll("[data-team]"), function (b) {
+      b.addEventListener("click", function () { join(b.dataset.team); });
+    });
+  }
+
+  function renderBoards() {
+    var all = HP.teams();
+    var meId = HP.state.ownedId || HP.state.activeProfile;
+    var myTeam = (P.team || "").trim().toLowerCase();
+
+    var rows = Object.keys(all).map(function (k) {
+      var t = all[k], agg = { key: k, name: t.name, n: t.members.length,
+        miles: 0, pct: 0, streak: 0, banked: 0, members: t.members };
+      t.members.forEach(function (m) {
+        agg.miles += m.miles; agg.pct += m.pct; agg.banked += m.banked;
+        if (m.streak > agg.streak) agg.streak = m.streak;
+      });
+      agg.pct = t.members.length ? agg.pct / t.members.length : 0;
+      return agg;
+    }).sort(function (a, b) { return b[sortKey] - a[sortKey]; });
+
+    document.getElementById("boardSub").textContent =
+      rows.length ? "Ranked by " + LABELS[sortKey].toLowerCase() + "." : "";
+
+    var top = rows.length ? Math.max(1, rows[0][sortKey]) : 1;
+    document.getElementById("teamBoard").innerHTML = rows.length
+      ? '<table><thead><tr><th class="rank">#</th><th>Team</th><th class="num">' +
+        HP.esc(LABELS[sortKey]) + '</th><th style="width:26%"></th><th class="num">Athletes</th></tr></thead><tbody>' +
+        rows.map(function (r, i) {
+          var w = Math.max(0, Math.min(100, (r[sortKey] / top) * 100));
+          return "<tr" + (r.key === myTeam ? ' class="you"' : "") + '><td class="rank">' + (i + 1) +
+            '</td><td><span class="lb-name">' + HP.esc(r.name) + "</span>" +
+            '<span class="lb-sub">' + HP.esc(r.members.map(function (m) { return m.name; }).join(", ")) + "</span></td>" +
+            '<td class="num">' + fmtMetric(r[sortKey], sortKey) + "</td>" +
+            '<td><span class="lb-bar"><span style="width:' + w.toFixed(1) + '%"></span></span></td>' +
+            '<td class="num">' + r.n + "</td></tr>";
+        }).join("") + "</tbody></table>"
+      : '<p class="empty">No teams yet. Create one above and share the name.</p>';
+
+    var solo = Object.keys(HP.state.profiles).map(function (id) { return HP.summary(HP.state.profiles[id]); })
+      .sort(function (a, b) { return b[sortKey] - a[sortKey]; });
+    var soloTop = solo.length ? Math.max(1, solo[0][sortKey]) : 1;
+
+    document.getElementById("soloBoard").innerHTML = solo.length
+      ? '<table><thead><tr><th class="rank">#</th><th>Athlete</th><th class="num">' +
+        HP.esc(LABELS[sortKey]) + '</th><th style="width:22%"></th><th class="num">Runs</th></tr></thead><tbody>' +
+        solo.map(function (m, i) {
+          var w = Math.max(0, Math.min(100, (m[sortKey] / soloTop) * 100));
+          return "<tr" + (m.id === meId ? ' class="you"' : "") + '><td class="rank">' + (i + 1) +
+            '</td><td><span class="lb-name">' + HP.esc(m.name) + "</span>" +
+            '<span class="lb-sub">' + (m.team ? HP.esc(m.team) + " \u00b7 " : "") +
+            HP.esc(HP.DIVISIONS[m.division].short) + "</span></td>" +
+            '<td class="num">' + fmtMetric(m[sortKey], sortKey) + "</td>" +
+            '<td><span class="lb-bar"><span style="width:' + w.toFixed(1) + '%"></span></span></td>' +
+            '<td class="num">' + m.runs + "</td></tr>";
+        }).join("") + "</tbody></table>"
+      : '<p class="empty">No athletes yet.</p>';
+  }
+
+  document.getElementById("boardSort").addEventListener("change", function (e) {
+    sortKey = e.target.value; renderBoards();
+  });
+
+  function render() { renderMine(); renderBoards(); }
+  HP.onChange(function () { reseat(); render(); });
+  render();
+})();
+</script>
+
+<script>
 /* ============ shell: athlete bar, view switching, store startup ============ */
 (function () {
   "use strict";
   var views = { tracker: document.getElementById("viewTracker"),
                 training: document.getElementById("viewTraining"),
-                races: document.getElementById("viewRaces") };
+                races: document.getElementById("viewRaces"),
+                team: document.getElementById("viewTeam") };
   var tabs = document.querySelectorAll("button.tab");
 
   function show(v) {
@@ -2440,7 +2891,8 @@ nav.tabs button.tab[aria-current="page"] {
     document.body.classList.toggle("readonly", !can);
 
     Object.keys(views).forEach(function (k) {
-      if (k === "races") return;      // browsing races is fine read-only
+      if (k === "races" || k === "team") return;   // browsing these read-only is fine;
+                                                  // their write controls gate themselves
       var nodes = views[k].querySelectorAll("input, select, textarea, button[type=submit]");
       Array.prototype.forEach.call(nodes, function (el) { el.disabled = !can; });
     });

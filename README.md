@@ -56,10 +56,40 @@ click away on every screen. The dates were compiled from public listings on
 unofficial - confirm on the official site before booking. Refreshing the list
 means editing the `RACES` array.
 
-## When to retire a shoe
+## Teams and the leaderboard
 
-Each pair gets its own recommendation instead of a single threshold, because a
-carbon racer and a daily trainer are not the same asset:
+A team is just a name held on each athlete, matched case-insensitively - create
+one and share the name, or tap a team already listed to join it. There is no
+separate teams collection: a team exists exactly as long as someone is on it,
+and the roster subscription already carries everything the board needs.
+
+Both boards (team and individual) rank by total miles, days at goal, best streak
+or miles banked. Team percentage is the average across its members; team streak
+is its best member's.
+
+## Target time
+
+Set a finish time and the plan paces itself from it. The target is placed
+between the published elite and average profiles, every split is interpolated at
+that position, then scaled so the parts add up to the target exactly - so
+`1:15:00` yields 5:03/km runs, 3:32 sled push, 6:42 wall balls and so on, and
+every 1 km repeat in the training plan then names that pace.
+
+A time trial is the reality check rather than the source: if the target needs
+materially more than the trial suggests you have, the app says so instead of
+quietly prescribing a pace you cannot hold. Without a target it falls back to
+time-trial pace plus the station-fatigue allowance.
+
+Note: the published table used for the women's row split is incomplete, so that
+one figure is an estimate and the UI says so.
+
+## The closet: when to retire a shoe
+
+Add pairs to the closet directly - they show up with zero miles and start
+tracking once you name them on a run. Retire a pair and it drops out of the
+suggestions but keeps its history. Each pair gets its own recommendation instead
+of a single threshold, because a carbon racer and a daily trainer are not the
+same asset:
 
 | Type | Recommended | Why |
 |---|---|---|
