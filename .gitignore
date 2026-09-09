@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# OneDrive sync artifacts
+*.tmp
+~$*
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# Claude Code session files
+.claude/
+
+# Dependencies / build output
+node_modules/
+dist/
+build/
