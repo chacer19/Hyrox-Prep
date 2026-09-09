@@ -187,6 +187,9 @@ tbody tr:hover { background: var(--ghost); }
 }
 .profile-pick { min-width: 220px; }
 .profile-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.profile-warn { font-size: 13px; color: var(--text-secondary); align-self: center; }
+button.danger { background: var(--critical); border-color: var(--critical); color: #fff; }
+button.danger:hover { filter: brightness(1.07); }
 nav.tabs { display: flex; gap: 4px; }
 nav.tabs a {
   text-decoration: none; color: var(--text-secondary); font-weight: 550;
@@ -709,45 +712,73 @@ nav.tabs button.tab[aria-current="page"] {
 
   /* ============ profile bar ============ */
   function mountProfileBar(el, notify) {
-    function paint() {
-      var ids = Object.keys(state.profiles);
-      el.innerHTML =
-        '<label class="field profile-pick">Athlete' +
-        '<select id="hpProfile">' +
-        ids.map(function (id) {
-          var p = state.profiles[id];
-          return '<option value="' + esc(id) + '"' + (id === state.activeProfile ? " selected" : "") + ">" +
-            esc(p.name) + " · " + esc(DIVISIONS[p.division].short) + "</option>";
-        }).join("") + "</select></label>" +
-        '<div class="profile-actions">' +
-        '<button type="button" id="hpAdd" class="ghost">Add athlete</button>' +
-        '<button type="button" id="hpRename" class="ghost">Rename</button>' +
-        (ids.length > 1 ? '<button type="button" id="hpDel" class="ghost">Remove</button>' : "") +
-        "</div>";
+    var mode = "idle";   // idle | add | rename | remove
 
-      el.querySelector("#hpProfile").addEventListener("change", function (e) {
-        state.activeProfile = e.target.value; save(); paint(); notify();
-      });
-      el.querySelector("#hpAdd").addEventListener("click", function () {
-        var name = prompt("Name for the new athlete?", "Athlete " + (ids.length + 1));
-        if (!name) return;
-        var p = blankProfile(name.trim());
-        state.profiles[p.id] = p; state.activeProfile = p.id; save(); paint(); notify();
-      });
-      el.querySelector("#hpRename").addEventListener("click", function () {
-        var p = active(), name = prompt("Rename athlete", p.name);
-        if (!name) return;
-        p.name = name.trim(); save(); paint(); notify();
-      });
-      var del = el.querySelector("#hpDel");
-      if (del) del.addEventListener("click", function () {
-        var p = active();
-        if (!confirm('Remove "' + p.name + '" and everything logged for them?')) return;
-        delete state.profiles[state.activeProfile];
-        state.activeProfile = Object.keys(state.profiles)[0];
-        save(); paint(); notify();
-      });
+    function paint() {
+      var ids = Object.keys(state.profiles), cur = active(), html;
+
+      if (mode === "add" || mode === "rename") {
+        html = '<label class="field profile-pick">' + (mode === "add" ? "New athlete" : "Rename athlete") +
+          '<input type="text" id="hpName" autocomplete="off" placeholder="Name" value="' +
+          esc(mode === "rename" ? cur.name : "") + '"></label>' +
+          '<div class="profile-actions">' +
+          '<button type="button" id="hpSave" class="primary">Save</button>' +
+          '<button type="button" id="hpCancel" class="ghost">Cancel</button></div>';
+      } else if (mode === "remove") {
+        html = '<div class="profile-warn">Remove <b>' + esc(cur.name) +
+          "</b> and everything logged for them? This can't be undone.</div>" +
+          '<div class="profile-actions">' +
+          '<button type="button" id="hpYes" class="danger">Remove</button>' +
+          '<button type="button" id="hpCancel" class="ghost">Cancel</button></div>';
+      } else {
+        html = '<label class="field profile-pick">Athlete<select id="hpProfile">' +
+          ids.map(function (id) {
+            var p = state.profiles[id];
+            return '<option value="' + esc(id) + '"' + (id === state.activeProfile ? " selected" : "") +
+              ">" + esc(p.name) + " \u00b7 " + esc(DIVISIONS[p.division].short) + "</option>";
+          }).join("") + "</select></label>" +
+          '<div class="profile-actions">' +
+          '<button type="button" id="hpAdd" class="ghost">Add athlete</button>' +
+          '<button type="button" id="hpRename" class="ghost">Rename</button>' +
+          (ids.length > 1 ? '<button type="button" id="hpDel" class="ghost">Remove</button>' : "") +
+          "</div>";
+      }
+      el.innerHTML = html;
+      var $ = function (id) { return el.querySelector("#" + id); };
+
+      if (mode === "idle") {
+        $("hpProfile").addEventListener("change", function (e) {
+          state.activeProfile = e.target.value; save(); paint(); notify();
+        });
+        $("hpAdd").addEventListener("click", function () { mode = "add"; paint(); focusName(); });
+        $("hpRename").addEventListener("click", function () { mode = "rename"; paint(); focusName(); });
+        if ($("hpDel")) $("hpDel").addEventListener("click", function () { mode = "remove"; paint(); });
+      } else if (mode === "remove") {
+        $("hpYes").addEventListener("click", function () {
+          delete state.profiles[state.activeProfile];
+          state.activeProfile = Object.keys(state.profiles)[0];
+          mode = "idle"; save(); paint(); notify();
+        });
+        $("hpCancel").addEventListener("click", function () { mode = "idle"; paint(); });
+      } else {
+        var commit = function () {
+          var name = $("hpName").value.trim();
+          if (!name) { $("hpName").focus(); return; }
+          if (mode === "add") {
+            var np = blankProfile(name);
+            state.profiles[np.id] = np; state.activeProfile = np.id;
+          } else { cur.name = name; }
+          mode = "idle"; save(); paint(); notify();
+        };
+        $("hpSave").addEventListener("click", commit);
+        $("hpCancel").addEventListener("click", function () { mode = "idle"; paint(); });
+        $("hpName").addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          else if (e.key === "Escape") { mode = "idle"; paint(); }
+        });
+      }
     }
+    function focusName() { var i = el.querySelector("#hpName"); if (i) { i.focus(); i.select(); } }
     paint();
   }
 
