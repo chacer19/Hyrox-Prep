@@ -326,6 +326,53 @@ nav.tabs button.tab[aria-current="page"] {
 .src { font-size: 12px; color: var(--text-secondary); }
 .src a { color: var(--series-1); }
 .src li { margin-bottom: 3px; }
+
+/* ---------- phones ----------
+   Placed last so these single-class rules win over their desktop
+   counterparts without an specificity arms race. */
+@media (max-width: 620px) {
+  .wrap { padding: 16px 14px 56px; }
+  .card { padding: 14px; }
+
+  header.top { gap: 10px; }
+  nav.tabs { width: 100%; }
+  nav.tabs button.tab { flex: 1 1 auto; }
+  header.top .actions { width: 100%; }
+  header.top .actions button { flex: 1 1 auto; }
+
+  .profile-bar { padding: 12px 14px; gap: 10px; }
+  .profile-pick { min-width: 0; width: 100%; }
+  .profile-actions { margin-left: 0; width: 100%; }
+  .profile-actions button { flex: 1 1 auto; }
+  .conn { align-self: flex-start; }
+
+  /* one field per row — 150px columns clip shoe names and notes */
+  .setup-grid, .log-grid { grid-template-columns: 1fr; }
+  .log-grid button[type="submit"] { width: 100%; }
+
+  /* never strand a lone tile in a row of its own */
+  .kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi { padding: 12px 13px; }
+  .kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .kpi .k-value { font-size: 22px; }
+
+  .hero { padding: 16px 14px; }
+  .hero .figure { font-size: 46px; }
+  .hero .figure.small { font-size: 26px; }
+
+  .shoe-spec { grid-template-columns: 1fr; }
+  .shoe-spec input[type="number"] { max-width: none; }
+
+  .phase-bar { gap: 2px; }
+  .banner.lock { gap: 8px; }
+  .banner.lock button { width: 100%; }
+}
+
+/* very narrow phones: two KPI columns stop paying their way */
+@media (max-width: 380px) {
+  .kpis { grid-template-columns: 1fr; }
+  .kpi:last-child:nth-child(odd) { grid-column: auto; }
+}
 </style>
 </head>
 <body>
