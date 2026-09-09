@@ -42,6 +42,20 @@ lays itself out backwards from race day.
 The plan's structure, and the reasoning behind each choice, is documented at the
 bottom of the training view along with its sources.
 
+## Find a race
+
+A third tab lists the 2026/27 HYROX season - search by city or country, filter
+by region, and hit **Use this race** to set your race date, which immediately
+drives the countdown, the mile targets and the training plan's phases.
+
+**The list is a baked-in snapshot, not a live query.** The artifact sandbox
+blocks every outbound fetch, so the page cannot ask hyrox.com anything at
+runtime; outbound *links* work, which is why the official race finder is one
+click away on every screen. The dates were compiled from public listings on
+2026-09-09 because hyrox.com blocks automated access (403), so they are
+unofficial - confirm on the official site before booking. Refreshing the list
+means editing the `RACES` array.
+
 ## When to retire a shoe
 
 Each pair gets its own recommendation instead of a single threshold, because a

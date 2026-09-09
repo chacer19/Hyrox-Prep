@@ -218,11 +218,35 @@ tbody tr:hover { background: var(--ghost); }
 .shoe-note { font-size: 11.5px; color: var(--text-secondary); margin-top: 8px; line-height: 1.45; }
 .shoe-note.grip { color: var(--serious); }
 
+/* race finder */
+a.ext { color: var(--series-1); text-decoration: none; font-weight: 550; font-size: 13px; white-space: nowrap; }
+a.ext:hover { text-decoration: underline; }
+.race-past { align-self: end; display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+.race-past input { width: auto; }
+.races { display: flex; flex-direction: column; margin-top: 16px; }
+.race {
+  display: grid; grid-template-columns: 92px 1fr auto auto; gap: 14px;
+  align-items: center; padding: 11px 4px; border-top: 1px solid var(--border);
+}
+.race:last-child { border-bottom: 1px solid var(--border); }
+.race.gone { opacity: .5; }
+.race.picked { background: var(--series-1-wash); }
+.race-date { font-variant-numeric: tabular-nums; font-size: 12.5px; font-weight: 600; }
+.race-date span { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+.race-city { font-size: 13.5px; font-weight: 600; }
+.race-city span { display: block; font-weight: 400; color: var(--text-secondary); font-size: 11.5px; }
+.race-when { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 620px) {
+  .race { grid-template-columns: 1fr auto; row-gap: 4px; }
+  .race-when { grid-column: 1; }
+}
+
 /* read-only: viewing an athlete that isn't yours */
 .banner.lock { border-left-color: var(--series-1); display: flex; gap: 12px;
   align-items: center; flex-wrap: wrap; }
 .banner.lock .grow { flex: 1 1 240px; }
-body.readonly [data-del] { display: none; }
+body.readonly [data-del], body.readonly [data-pick] { display: none; }
 body.readonly input:disabled,
 body.readonly select:disabled,
 body.readonly textarea:disabled { opacity: .6; cursor: not-allowed; }
@@ -313,6 +337,7 @@ nav.tabs button.tab[aria-current="page"] {
     <nav class="tabs">
       <button type="button" class="tab" data-view="tracker">Mile tracker</button>
       <button type="button" class="tab" data-view="training">Training plan</button>
+      <button type="button" class="tab" data-view="races">Races</button>
     </nav>
     <div class="actions">
       <button id="btnExport" class="ghost">Export JSON</button>
@@ -462,6 +487,28 @@ nav.tabs button.tab[aria-current="page"] {
     Saved in this browser only. Use <b>Export JSON</b> to move your log to another device —
     the OneDrive copy of this file syncs the app, not the data.
   </p>
+  </div>
+
+  <div id="viewRaces" class="hidden">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Find a race</h2>
+          <p class="sub" id="raceSub"></p>
+        </div>
+        <a class="ext" href="https://hyrox.com/find-my-race/" target="_blank" rel="noopener noreferrer">Official race finder &#8599;</a>
+      </div>
+      <div class="row setup-grid">
+        <label class="field">Search
+          <input type="search" id="rqSearch" placeholder="City or country" autocomplete="off">
+        </label>
+        <label class="field">Region
+          <select id="rqRegion"></select>
+        </label>
+        <label class="tick race-past"><input type="checkbox" id="rqPast"> Include races already run</label>
+      </div>
+      <div id="raceList"></div>
+    </section>
   </div>
 
   <div id="viewTraining" class="hidden">
@@ -677,6 +724,83 @@ nav.tabs button.tab[aria-current="page"] {
       row: "—", balls: "3:50 / 6:20", rox: "3:47 / 6:12"
     }
   };
+
+  /* ============ race calendar ============
+     Snapshot of the 2026/27 season compiled 2026-09-09 from secondary sources —
+     hyrox.com blocks automated access, so none of this came from the official
+     site and none of it is authoritative. Every date needs confirming on the
+     official race finder before anyone books anything. Event windows span
+     several days; `start` is the first day of the window. */
+  var RACE_SNAPSHOT = "2026-09-09";
+  var RACE_SOURCE = "https://hyrox.com/find-my-race/";
+  var RACES = [
+    // --- North America, fall 2026 ---
+    { city: "Washington, DC",   area: "USA",    region: "North America", start: "2026-09-03", end: "2026-09-07" },
+    { city: "Salt Lake City, UT", area: "USA",  region: "North America", start: "2026-09-18", end: "2026-09-20" },
+    { city: "Toronto, ON",      area: "Canada", region: "North America", start: "2026-10-01", end: "2026-10-04" },
+    { city: "Boston, MA",       area: "USA",    region: "North America", start: "2026-10-08", end: "2026-10-11" },
+    { city: "Tampa, FL",        area: "USA",    region: "North America", start: "2026-10-23", end: "2026-10-25" },
+    { city: "Denver, CO",       area: "USA",    region: "North America", start: "2026-11-12", end: "2026-11-15" },
+    { city: "Dallas, TX",       area: "USA",    region: "North America", start: "2026-11-18", end: "2026-11-22" },
+    { city: "Anaheim, CA",      area: "USA",    region: "North America", start: "2026-12-04", end: "2026-12-06" },
+    { city: "Nashville, TN",    area: "USA",    region: "North America", start: "2026-12-10", end: "2026-12-13" },
+    { city: "Vancouver, BC",    area: "Canada", region: "North America", start: "2026-12-18", end: "2026-12-20" },
+    // --- North America, spring 2027 ---
+    { city: "Chicago, IL",      area: "USA",    region: "North America", start: "2027-02-11", end: "2027-02-15" },
+    { city: "Cancún",           area: "Mexico", region: "North America", start: "2027-02-19", end: "2027-02-21" },
+    { city: "Phoenix, AZ",      area: "USA",    region: "North America", start: "2027-02-25", end: "2027-02-28" },
+    { city: "Las Vegas, NV",    area: "USA",    region: "North America", start: "2027-03-12", end: "2027-03-14" },
+    { city: "Guadalajara",      area: "Mexico", region: "North America", start: "2027-03-19", end: "2027-03-21" },
+    { city: "Miami Beach, FL",  area: "USA",    region: "North America", start: "2027-03-26", end: "2027-03-28" },
+    { city: "Houston, TX",      area: "USA",    region: "North America", start: "2027-04-01", end: "2027-04-04" },
+    { city: "Monterrey",        area: "Mexico", region: "North America", start: "2027-04-16", end: "2027-04-18" },
+    { city: "Ottawa, ON",       area: "Canada", region: "North America", start: "2027-04-21", end: "2027-04-25" },
+    { city: "Atlanta, GA",      area: "USA",    region: "North America", start: "2027-04-23", end: "2027-04-25" },
+    { city: "San Diego, CA",    area: "USA",    region: "North America", start: "2027-05-13", end: "2027-05-16" },
+    { city: "Portland, OR",     area: "USA",    region: "North America", start: "2027-05-21", end: "2027-05-23" },
+    { city: "New York, NY",     area: "USA",    region: "North America", start: "2027-05-27", end: "2027-06-07" },
+    { city: "Puebla",           area: "Mexico", region: "North America", start: "2027-05-28", end: "2027-05-30" },
+    // --- UK ---
+    { city: "Birmingham",       area: "UK",     region: "UK", start: "2026-10-27", end: "2026-11-01" },
+    { city: "London (ExCeL)",   area: "UK",     region: "UK", start: "2026-12-02", end: "2026-12-06" },
+    // --- Europe ---
+    { city: "Tenerife",         area: "Spain",       region: "Europe", start: "2026-09-05", end: "2026-09-06" },
+    { city: "Maastricht",       area: "Netherlands", region: "Europe", start: "2026-09-17", end: "2026-09-20" },
+    { city: "Rome",             area: "Italy",       region: "Europe", start: "2026-09-24", end: "2026-09-27" },
+    { city: "Oslo",             area: "Norway",      region: "Europe", start: "2026-09-25", end: "2026-09-27" },
+    { city: "Bordeaux",         area: "France",      region: "Europe", start: "2026-09-30", end: "2026-10-04" },
+    { city: "Karlsruhe",        area: "Germany",     region: "Europe", start: "2026-10-01", end: "2026-10-04" },
+    { city: "Geneva",           area: "Switzerland", region: "Europe", start: "2026-10-09", end: "2026-10-11" },
+    { city: "Gdańsk",           area: "Poland",      region: "Europe", start: "2026-10-10", end: "2026-10-11" },
+    { city: "Valencia",         area: "Spain",       region: "Europe", start: "2026-10-16", end: "2026-10-18" },
+    { city: "Nice",             area: "France",      region: "Europe", start: "2026-10-29", end: "2026-11-01" },
+    { city: "Düsseldorf",       area: "Germany",     region: "Europe", start: "2026-11-11", end: "2026-11-15" },
+    { city: "Barcelona",        area: "Spain",       region: "Europe", start: "2026-11-12", end: "2026-11-15" },
+    { city: "Poznań",           area: "Poland",      region: "Europe", start: "2026-11-20", end: "2026-11-22" },
+    { city: "Utrecht",          area: "Netherlands", region: "Europe", start: "2026-11-26", end: "2026-11-29" },
+    { city: "Milan",            area: "Italy",       region: "Europe", start: "2026-12-05", end: "2026-12-06" },
+    { city: "Frankfurt",        area: "Germany",     region: "Europe", start: "2026-12-10", end: "2026-12-13" },
+    { city: "Paris",            area: "France",      region: "Europe", start: "2026-12-12", end: "2026-12-20" },
+    { city: "Ghent",            area: "Belgium",     region: "Europe", start: "2026-12-17", end: "2026-12-20" },
+    { city: "Helsinki",         area: "Finland",     region: "Europe", start: "2026-12-18", end: "2026-12-20" },
+    { city: "Stockholm",        area: "Sweden",      region: "Europe", start: "2027-06-18", end: "2027-06-21" },
+    // --- Asia (year inferred from the 2026/27 season window) ---
+    { city: "Beijing",          area: "China",     region: "Asia", start: "2026-09-12", end: "2026-09-13" },
+    { city: "Shanghai",         area: "China",     region: "Asia", start: "2026-10-31", end: "2026-11-01" },
+    { city: "Seoul",            area: "S. Korea",  region: "Asia", start: "2026-11-14", end: "2026-11-15" },
+    { city: "Guangzhou",        area: "China",     region: "Asia", start: "2026-11-21", end: "2026-11-22" },
+    { city: "Jakarta",          area: "Indonesia", region: "Asia", start: "2027-06-27", end: "2027-06-28" },
+    { city: "Hangzhou",         area: "China",     region: "Asia", start: "2027-07-04", end: "2027-07-05" },
+    { city: "Chengdu",          area: "China",     region: "Asia", start: "2027-08-01", end: "2027-08-02" },
+    { city: "Chiba",            area: "Japan",     region: "Asia", start: "2027-08-07", end: "2027-08-09" },
+    { city: "Shenzhen",         area: "China",     region: "Asia", start: "2027-08-15", end: "2027-08-16" },
+    // --- rest of world ---
+    { city: "São Paulo",        area: "Brazil",       region: "South America", start: "2026-10-17", end: "2026-10-17" },
+    { city: "Buenos Aires",     area: "Argentina",    region: "South America", start: "2027-06-13", end: "2027-06-13" },
+    { city: "Johannesburg",     area: "South Africa", region: "Africa", start: "2026-11-27", end: "2026-11-29" },
+    { city: "Cape Town",        area: "South Africa", region: "Africa", start: "2027-08-14", end: "2027-08-15" },
+    { city: "Sydney",           area: "Australia",    region: "Oceania", start: "2027-07-01", end: "2027-07-05" }
+  ];
 
   /* ============ helpers ============ */
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -1043,6 +1167,7 @@ nav.tabs button.tab[aria-current="page"] {
     onChange: onChange, emit: emit,
     KEY: KEY, DIVISIONS: DIVISIONS, LOADS: LOADS, STATIONS: STATIONS, BENCH: BENCH,
     SHOE_TYPES: SHOE_TYPES, SLED_FACTOR: SLED_FACTOR,
+    RACES: RACES, RACE_SNAPSHOT: RACE_SNAPSHOT, RACE_SOURCE: RACE_SOURCE,
     init: init, save: save, active: active, status: status,
     owned: owned, claim: claim, canEdit: canEdit,
     blankProfile: blankProfile, addAthlete: addAthlete, removeAthlete: removeAthlete,
@@ -2089,11 +2214,111 @@ nav.tabs button.tab[aria-current="page"] {
 </script>
 
 <script>
+/* ============ race finder ============
+   A baked-in snapshot, not a live query: the artifact sandbox blocks every
+   outbound fetch, so the page cannot ask hyrox.com anything. Links out work,
+   which is why the official finder is one click away on every screen. */
+(function () {
+  "use strict";
+  var P = HP.active();
+  function reseat() { P = HP.active(); }
+
+  var q = { text: "", region: "all", past: false };
+  var regions = ["all"].concat(HP.RACES.map(function (r) { return r.region; })
+    .filter(function (v, i, a) { return a.indexOf(v) === i; }).sort());
+
+  document.getElementById("rqRegion").innerHTML = regions.map(function (r) {
+    return '<option value="' + HP.esc(r) + '">' + (r === "all" ? "Everywhere" : HP.esc(r)) + "</option>";
+  }).join("");
+
+  document.getElementById("raceSub").innerHTML =
+    "Snapshot taken " + HP.esc(HP.fmtLong(HP.RACE_SNAPSHOT)) +
+    ", compiled from public listings rather than the official site \u2014 " +
+    "<b>confirm the date on hyrox.com before you book</b>. Event windows run several days; " +
+    "picking one sets your race date to the first day, which you can adjust under Race &amp; goal.";
+
+  function fmtWindow(r) {
+    var a = HP.parseISO(r.start), b = HP.parseISO(r.end);
+    var one = r.start === r.end;
+    var m = function (d) { return d.toLocaleDateString(undefined, { month: "short" }); };
+    return one ? m(a) + " " + a.getDate()
+      : m(a) === m(b) ? m(a) + " " + a.getDate() + "\u2013" + b.getDate()
+      : m(a) + " " + a.getDate() + " \u2013 " + m(b) + " " + b.getDate();
+  }
+
+  function render() {
+    var today = HP.todayISO();
+    var rows = HP.RACES.filter(function (r) {
+      if (!q.past && HP.dayDiff(today, r.end) < 0) return false;
+      if (q.region !== "all" && r.region !== q.region) return false;
+      if (q.text) {
+        var hay = (r.city + " " + r.area + " " + r.region).toLowerCase();
+        if (hay.indexOf(q.text) === -1) return false;
+      }
+      return true;
+    }).sort(function (a, b) { return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+
+    var el = document.getElementById("raceList");
+    if (!rows.length) {
+      el.innerHTML = '<p class="empty">No races match. Try a wider region, or clear the search.</p>';
+      return;
+    }
+
+    el.innerHTML = '<div class="races">' + rows.map(function (r) {
+      var days = HP.dayDiff(today, r.start), gone = HP.dayDiff(today, r.end) < 0;
+      var when = gone ? "already run"
+        : days <= 0 ? "on now"
+        : days < 14 ? days + " day" + (days === 1 ? "" : "s") + " away"
+        : Math.round(days / 7) + " weeks away";
+      var picked = P.raceDate === r.start;
+      return '<div class="race' + (gone ? " gone" : "") + (picked ? " picked" : "") + '">' +
+        '<div class="race-date">' + HP.esc(fmtWindow(r)) +
+          "<span>" + HP.parseISO(r.start).getFullYear() + "</span></div>" +
+        '<div class="race-city">' + HP.esc(r.city) +
+          "<span>" + HP.esc(r.area) + " \u00b7 " + HP.esc(r.region) + "</span></div>" +
+        '<div class="race-when">' + HP.esc(when) + "</div>" +
+        (gone ? '<span class="race-when">\u2014</span>'
+              : picked ? '<span class="status"><span class="dot" style="background:var(--good)"></span>Your race</span>'
+              : '<button type="button" class="ghost" data-pick="' + HP.esc(r.start) +
+                '" data-city="' + HP.esc(r.city) + '">Use this race</button>') +
+        "</div>";
+    }).join("") + "</div>" +
+      '<p class="foot-note">' + rows.length + " race" + (rows.length === 1 ? "" : "s") +
+      " listed. Dates are unofficial \u2014 check <a class=\"ext\" href=\"" + HP.RACE_SOURCE +
+      '" target="_blank" rel="noopener noreferrer">hyrox.com</a> for entries and exact wave times.</p>';
+  }
+
+  document.getElementById("rqSearch").addEventListener("input", function (e) {
+    q.text = e.target.value.trim().toLowerCase(); render();
+  });
+  document.getElementById("rqRegion").addEventListener("change", function (e) {
+    q.region = e.target.value; render();
+  });
+  document.getElementById("rqPast").addEventListener("change", function (e) {
+    q.past = e.target.checked; render();
+  });
+
+  document.getElementById("raceList").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-pick]"); if (!btn) return;
+    if (!HP.canEdit()) return;
+    P.raceDate = btn.dataset.pick;
+    P.raceName = "HYROX " + btn.dataset.city;
+    if (!P.planStart) P.planStart = HP.todayISO();
+    HP.save(); HP.emit();
+  });
+
+  HP.onChange(function () { reseat(); render(); });
+  render();
+})();
+</script>
+
+<script>
 /* ============ shell: athlete bar, view switching, store startup ============ */
 (function () {
   "use strict";
   var views = { tracker: document.getElementById("viewTracker"),
-                training: document.getElementById("viewTraining") };
+                training: document.getElementById("viewTraining"),
+                races: document.getElementById("viewRaces") };
   var tabs = document.querySelectorAll("button.tab");
 
   function show(v) {
@@ -2116,6 +2341,7 @@ nav.tabs button.tab[aria-current="page"] {
     document.body.classList.toggle("readonly", !can);
 
     Object.keys(views).forEach(function (k) {
+      if (k === "races") return;      // browsing races is fine read-only
       var nodes = views[k].querySelectorAll("input, select, textarea, button[type=submit]");
       Array.prototype.forEach.call(nodes, function (el) { el.disabled = !can; });
     });
