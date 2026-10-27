@@ -701,7 +701,7 @@ nav.tabs button.tab[aria-current="page"] {
       <label class="field">Race date
         <input type="date" id="trRaceDate">
       </label>
-      <label class="field">Training days / week
+      <label class="field" id="daysWkWrap">Training days / week
         <select id="daysWk">
           <option value="4">4 days</option>
           <option value="5" selected>5 days</option>
@@ -714,6 +714,15 @@ nav.tabs button.tab[aria-current="page"] {
           <option value="mod">Moderate (10–20 mi/wk)</option>
           <option value="high">Strong (20+ mi/wk)</option>
         </select>
+      </label>
+      <label class="field">Training style
+        <select id="style">
+          <option value="balanced">Balanced (5 days, 2 rest)</option>
+          <option value="mflh">MFLH-inspired (daily, varied domains)</option>
+        </select>
+      </label>
+      <label class="tick race-past" id="cap60Wrap">
+        <input type="checkbox" id="cap60"> Keep sessions under 60 min
       </label>
     </div>
   </section>
@@ -820,7 +829,7 @@ nav.tabs button.tab[aria-current="page"] {
 (function (global) {
   "use strict";
 
-  var BUILD  = "2026-10-27.1938";          // stamped at publish time
+  var BUILD  = "2026-10-27.1941";          // stamped at publish time
   var KEY    = "hyroxPrep.v2";       // local-mode roster
   var PREFS  = "hyroxPrep.prefs";    // per-viewer, both modes
   var LEGACY = "hyroxPrep.v1";
@@ -1112,7 +1121,8 @@ nav.tabs button.tab[aria-current="page"] {
       id: id || newId(), name: name || "Athlete", division: "open-men",
       raceName: "", raceDate: "", planStart: "", dailyGoal: 1, shoeLimit: 400,
       daysPerWeek: 5, runBase: "low", ttDist: 0, ttSec: null,
-      runs: [], done: {}, shoeSpecs: {}, team: "", targetTime: null
+      runs: [], done: {}, shoeSpecs: {}, team: "", targetTime: null,
+      style: "balanced", cap60: false
     };
   }
   function normalize(id, v) {
@@ -2300,19 +2310,22 @@ nav.tabs button.tab[aria-current="page"] {
 
   function assess() {
     var pp = planPace(), f = fitness();
-    if (!(P.targetTime > 0) || !pp) return { state: "noTarget", emphasis: "balanced", f: f };
-    if (f.bestPerMi == null) return { state: "noData", emphasis: "balanced", f: f, needKm: pp.perKm };
+    var st = { style: P.style || "balanced", cap60: !!P.cap60 };
+    if (!(P.targetTime > 0) || !pp)
+      return Object.assign({ state: "noTarget", emphasis: "balanced", f: f }, st);
+    if (f.bestPerMi == null)
+      return Object.assign({ state: "noData", emphasis: "balanced", f: f, needKm: pp.perKm }, st);
 
     var curKm = f.bestPerMi / 1.609344;
     var gap = curKm - pp.perKm;            // positive = currently slower than the target needs
     var trend = (f.priorAvgPerMi && f.avgPerMi) ? f.priorAvgPerMi - f.avgPerMi : null;  // positive = getting quicker
     var state = gap <= -COMFORT ? "ahead" : gap <= 0 ? "onTrack" : gap <= 30 ? "behind" : "farBehind";
-    return {
+    return Object.assign({
       state: state,
       // running handled -> spend the block where the benchmark gaps actually are
       emphasis: (state === "ahead" || state === "onTrack") ? "stations" : "run",
       gap: gap, curKm: curKm, needKm: pp.perKm, trend: trend, f: f, source: pp.source
-    };
+    }, st);
   }
 
   /* ============ session content ============ */
@@ -2344,6 +2357,10 @@ nav.tabs button.tab[aria-current="page"] {
     if (ad && ad.emphasis === "stations" && (phase === "Build" || phase === "Race prep")) {
       b.push("<b>Roxzone drill</b> 4 × (sled push 25 m \u2192 jog 100 m \u2192 20 wall balls) \u2014 " +
              "your running is where it needs to be, so the time left is in the transitions");
+    }
+    if (ad && ad.style === "mflh" && phase !== "Taper") {
+      b.push("<b>Accessory:</b> single-leg RDL 3 × 10 each · calf raises 3 × 15 · side plank 3 × 30 s each");
+      if (!ad.cap60) b.push("<b>Mobility:</b> 10 min — ankles and hips, the two that limit the lunges");
     }
     return { type: "Strength A", title: "Legs & posterior chain", blocks: b };
   }
@@ -2380,6 +2397,10 @@ nav.tabs button.tab[aria-current="page"] {
       b.push("Keep this session brisk \u2014 short rests. Running is the limiter right now, " +
              "so strength work holds ground rather than adding fatigue.");
     }
+    if (ad && ad.style === "mflh" && phase !== "Taper") {
+      b.push("<b>Accessory:</b> face pulls 3 × 15 · dead hang 3 × max · suitcase carry 3 × 30 m each side");
+      if (!ad.cap60) b.push("<b>Mobility:</b> 10 min — thoracic spine and lats, for the ski and the pull");
+    }
     return { type: "Strength B", title: "Pull, grip & engine", blocks: b };
   }
 
@@ -2413,6 +2434,9 @@ nav.tabs button.tab[aria-current="page"] {
     if (ad && ad.state === "ahead" && (phase === "Build" || phase === "Race prep")) {
       b.push("You have margin on this pace \u2014 run the reps controlled rather than fast, and " +
              "put the spare effort into the stations.");
+    }
+    if (ad && ad.style === "mflh") {
+      return { type: "Run — short", title: "Short / speed", blocks: b };
     }
     return { type: "Run — quality", title: "Interval session", blocks: b };
   }
@@ -2473,6 +2497,33 @@ nav.tabs button.tab[aria-current="page"] {
       blocks: ["<b>" + d + " miles</b> very easy", "Optional 10 min mobility after"] };
   }
 
+  /* Mixed-modality conditioning with a stated time domain — the "different time
+     domains" the MFLH material describes, rotated week to week. */
+  function conditioning(phase, wk, ad, cap) {
+    var l = L();
+    var domains = [
+      { t: "12 min AMRAP", b: ["10 wall balls @ " + l.ball, "200 m run", "10 burpee broad jumps"] },
+      { t: "3 × 5 min blocks, 1 min between", b: ["Row 500 m, then max wall balls in what's left"] },
+      { t: "21-15-9", b: ["Wall balls @ " + l.ball, "Calorie row", "Burpee broad jumps", "400 m run after each round"] },
+      { t: "EMOM 20", b: ["Odd: 12 wall balls", "Even: 150 m SkiErg"] },
+      { t: "5 rounds for time", b: ["250 m SkiErg", "25 m sled push @ " + l.push, "100 m farmers carry @ " + l.carry] }
+    ];
+    var d = domains[(wk - 1) % domains.length];
+    var b = ["<b>" + d.t + "</b>"].concat(d.b.map(function (x) { return "· " + x; }));
+    b.push("Time domain is the point — hold one pace you can repeat, don't sprint the first round.");
+    if (!cap) b.push("Finish: 8 min easy spin or walk.");
+    return { type: "Conditioning", title: "Mixed modality · " + d.t, blocks: b };
+  }
+
+  function mobility() {
+    return {
+      type: "Movement", title: "Mobility & easy movement",
+      blocks: ["Not a rest day — 20–30 min of easy movement: walk, spin, or very easy jog.",
+               "Mobility: hips, ankles, thoracic spine, lats. 10–15 min, unhurried.",
+               "Still clears your <b>1 mile daily minimum</b> — log the walk."]
+    };
+  }
+
   var REST = { type: "Rest", title: "Rest", rest: true,
     blocks: ["Full rest, or a walk.", "Still clear your <b>1 mile daily minimum</b> — a walk counts. Log it in the mile tracker."] };
 
@@ -2507,7 +2558,12 @@ nav.tabs button.tab[aria-current="page"] {
           lR = longRun(ph, m), eR = easyRun(m);
 
       var slots;
-      if (days >= 6)      slots = [sA, rQ, eR, hy, sB, lR, REST];
+      if (ad.style === "mflh") {
+        // seven days, no rest day: two strength, short / long running, a
+        // compromised session, one mixed-modality piece, and a movement day
+        slots = [sA, rQ, hy, sB, conditioning(ph, i + 1, ad, ad.cap60), lR, mobility()];
+      }
+      else if (days >= 6)  slots = [sA, rQ, eR, hy, sB, lR, REST];
       else if (days === 5) slots = [sA, rQ, REST, hy, sB, lR, REST];
       else                 slots = [sA, REST, hy, REST, sB, lR, REST];
 
@@ -2769,6 +2825,16 @@ nav.tabs button.tab[aria-current="page"] {
       "<li><b>Race pace = time-trial pace + ~12 s/km.</b> Taken from the common coaching heuristic, rather than running the 1 km repeats at 5k effort.</li>" +
       "<li><b>Deload every fourth week</b> and a taper week before the race.</li>" +
       "</ul>" +
+      (P.style === "mflh"
+        ? "<p><b>On the MFLH-inspired style:</b> this is built from the characteristics Christian Harris's " +
+          "Move Fast Lift Heavy programs are publicly described as having \u2014 training every day rather than " +
+          "taking rest days, each day blending different equipment and time domains, running split across long, " +
+          "medium and short, and accessory plus mobility work attached to the strength days. " +
+          "<b>It is not his programming.</b> Those descriptions come from MFLH's own marketing and partner pages, " +
+          "not an independent breakdown, and his actual programs are a paid product " +
+          '(<a href="https://mflhtrain.com/mflh-365" target="_blank" rel="noopener noreferrer">mflhtrain.com</a>). ' +
+          "If you want his sessions, buy them \u2014 this only borrows the shape.</p>"
+        : "") +
       "<p><b>Judgement calls I made:</b> the plan starts conservative because it is built for someone rebuilding a running base; the full race simulation sits at the start of race prep (not race week) so there is time to absorb it; and the 1-mile daily minimum runs underneath everything, including rest days, where a walk counts.</p>" +
       "<p class=\"foot-note\">Sources: " +
       '<a href="https://www.puregym.com/us/blog/hyrox-training-plan-a-free-workout-plan-to-get-hyrox-ready" target="_blank" rel="noopener">PureGym plan</a>, ' +
@@ -2796,6 +2862,11 @@ nav.tabs button.tab[aria-current="page"] {
   bind("trRaceDate", "raceDate");
   bind("daysWk", "daysPerWeek", Number);
   bind("runBase", "runBase");
+  bind("style", "style");
+  document.getElementById("cap60").addEventListener("change", function (e) {
+    if (!HP.canEdit()) { fill(); return; }
+    P.cap60 = e.target.checked; HP.save(); HP.emit();
+  });
 
   document.getElementById("tgTime").addEventListener("change", function (e) {
     if (!HP.canEdit()) { fill(); return; }
@@ -2825,6 +2896,12 @@ nav.tabs button.tab[aria-current="page"] {
     document.getElementById("trRaceDate").value = P.raceDate || "";
     document.getElementById("daysWk").value = String(P.daysPerWeek || 5);
     document.getElementById("runBase").value = P.runBase || "low";
+    document.getElementById("style").value = P.style || "balanced";
+    document.getElementById("cap60").checked = !!P.cap60;
+    var isMflh = (P.style || "balanced") === "mflh";
+    document.getElementById("cap60Wrap").classList.toggle("hidden", !isMflh);
+    // hidden, not disabled: the read-only sweep owns `disabled` and would undo it
+    document.getElementById("daysWkWrap").classList.toggle("hidden", isMflh);
     document.getElementById("tgTime").value = P.targetTime ? HP.fmtDur(P.targetTime) : "";
     document.getElementById("ttDist").value = P.ttDist || "";
     document.getElementById("ttTime").value = P.ttSec ? HP.fmtDur(P.ttSec) : "";

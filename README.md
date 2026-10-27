@@ -105,6 +105,25 @@ materially more than the trial suggests you have, the app says so instead of
 quietly prescribing a pace you cannot hold. Without a target it falls back to
 time-trial pace plus the station-fatigue allowance.
 
+### Training styles
+
+**Balanced** (default) is 5 days with 2 rest days.
+
+**MFLH-inspired** is 7 days with no rest day: two strength days with accessory and
+mobility work attached, a short/speed run, a compromised-running session, one
+mixed-modality conditioning piece whose time domain rotates week to week
+(12-min AMRAP, 3x5-min blocks, 21-15-9, EMOM 20, 5 rounds for time), a long run,
+and a movement day that is explicitly not rest. A "keep sessions under 60 min"
+option drops the mobility blocks.
+
+This is built from the characteristics Christian Harris's Move Fast Lift Heavy
+programs are *publicly described* as having - daily training, varied equipment
+and time domains, running split long/medium/short, accessory plus mobility.
+**It is not his programming.** Those descriptions come from MFLH's own marketing
+and partner pages rather than an independent breakdown, and his actual programs
+are a paid product. The app says so in the rationale section when the style is
+selected.
+
 ### The plan adapts to your logged times
 
 Every timed run of a mile or more is evidence. The app takes your best sustained
