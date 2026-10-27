@@ -107,7 +107,28 @@ time-trial pace plus the station-fatigue allowance.
 
 ### Training styles
 
-**Balanced** (default) is 5 days with 2 rest days.
+**Evidence-led** (default) is built on the Hyrox literature rather than on
+published plans. The first peer-reviewed study of a simulated race (11
+recreational athletes) found VO2max was the strongest correlate of finish time
+(rho = -0.71, p = 0.01), endurance training volume next (-0.68) and body fat
+percentage third (0.67) - while grip strength, muscle mass percentage and
+resistance-training volume showed **no meaningful relationship**, and nothing
+predicted station times at all. Running was ~59% of race time.
+
+So: running volume leads and is ~80% easy, with **one hard running session a
+week**; strength is twice weekly as support rather than the headline; stations
+are trained as **skill and pacing**; and there are two real rest days, because
+recovery is among the least-studied areas and concurrent-training interference
+worsens as the gap between hard sessions shrinks.
+
+Week: strength (legs) / easy aerobic / one hard run / rest / strength (pull) +
+station skill / long run / rest.
+
+Limits, stated in the app: n = 11, treadmill runs, non-competition sled, and the
+polarised-distribution evidence is real but modest (SMD 0.24, CI 0.01-0.48).
+Best available evidence is not the same as strong evidence.
+
+**Balanced** is 5 days with 2 rest days.
 
 **MFLH-inspired** is 7 days with no rest day: two strength days with accessory and
 mobility work attached, a short/speed run, a compromised-running session, one

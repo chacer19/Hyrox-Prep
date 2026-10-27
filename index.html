@@ -717,6 +717,7 @@ nav.tabs button.tab[aria-current="page"] {
       </label>
       <label class="field">Training style
         <select id="style">
+          <option value="evidence">Evidence-led (recommended)</option>
           <option value="balanced">Balanced (5 days, 2 rest)</option>
           <option value="mflh">MFLH-inspired (daily, varied domains)</option>
         </select>
@@ -829,7 +830,7 @@ nav.tabs button.tab[aria-current="page"] {
 (function (global) {
   "use strict";
 
-  var BUILD  = "2026-10-27.1941";          // stamped at publish time
+  var BUILD  = "2026-10-27.1950";          // stamped at publish time
   var KEY    = "hyroxPrep.v2";       // local-mode roster
   var PREFS  = "hyroxPrep.prefs";    // per-viewer, both modes
   var LEGACY = "hyroxPrep.v1";
@@ -1122,7 +1123,7 @@ nav.tabs button.tab[aria-current="page"] {
       raceName: "", raceDate: "", planStart: "", dailyGoal: 1, shoeLimit: 400,
       daysPerWeek: 5, runBase: "low", ttDist: 0, ttSec: null,
       runs: [], done: {}, shoeSpecs: {}, team: "", targetTime: null,
-      style: "balanced", cap60: false
+      style: "evidence", cap60: false
     };
   }
   function normalize(id, v) {
@@ -2239,6 +2240,8 @@ nav.tabs button.tab[aria-current="page"] {
     // behind on running: add volume. On target: hold it and spend the effort on stations.
     if (ad && phase !== "Taper") {
       if (ad.emphasis === "run") v *= ad.state === "farBehind" ? 1.2 : 1.12;
+      // endurance volume is the strongest trainable correlate, so this style leans on it
+      if (ad.style === "evidence") v *= 1.08;
     }
     if (deload) v *= 0.75;
     return Math.round(v * 2) / 2;
@@ -2524,6 +2527,92 @@ nav.tabs button.tab[aria-current="page"] {
     };
   }
 
+  /* ============ evidence-led sessions ============
+     Built on what the Hyrox literature actually supports: VO2max is the
+     strongest correlate of race time (rho = -0.71), endurance training volume
+     next (-0.68), while resistance-training volume and grip strength showed no
+     meaningful relationship, and nothing predicted station times at all. So
+     running volume leads, strength supports rather than headlines, and the
+     stations are trained as skill and pacing. */
+
+  function supportStrength(phase, wk, ad, second) {
+    var l = L(), b;
+    var heavy = phase === "Build" || phase === "Race prep";
+    if (phase === "Taper") {
+      b = ["<b>Squat or trap-bar deadlift</b> 2 × 3 @ RPE 5 \u2014 movement only",
+           "<b>Sled push</b> 2 × 25 m at race load, easy",
+           "Mobility 10 min"];
+    } else if (!second) {
+      b = ["<b>Squat</b> " + (heavy ? "4 × 5 @ RPE 7" : "3 × 8 @ RPE 6"),
+           "<b>Romanian deadlift</b> 3 × 8",
+           "<b>Sandbag lunge</b> 3 × 25 m @ " + l.lunge,
+           "<b>Split squat</b> 2 × 10 each side",
+           "Core: hollow hold 3 × 40 s"];
+    } else {
+      b = ["<b>Trap-bar deadlift</b> " + (heavy ? "4 × 5 @ RPE 7" : "3 × 8 @ RPE 6"),
+           "<b>Pull-ups</b> 3 × 6\u20138",
+           "<b>Farmers carry</b> 3 × 100 m @ " + l.carry,
+           "<b>Dumbbell row</b> 3 × 10 each side",
+           "Core: plank 3 × 45 s"];
+    }
+    b.push("<b>Support, not the main event.</b> Stop two reps short of failure \u2014 " +
+           "this exists to protect the running, not to compete with it.");
+    return { type: "Strength", title: second ? "Strength support · pull" : "Strength support · legs", blocks: b };
+  }
+
+  function stationSkill(phase, wk, ad) {
+    var l = L();
+    var focus = [
+      ["Sled pull", "6 × 25 m @ " + l.pull + " \u2014 hand-over-hand, feet planted, no jerking. Time each rep; chase consistency, not a single fast one."],
+      ["Wall balls", "5 × 20 @ " + l.ball + " \u2014 find the rhythm you can hold for 100. Note the rep where form slips."],
+      ["Burpee broad jump", "5 × 15 m \u2014 step-back burpee, long jump. This is a pacing skill, not a sprint."],
+      ["Roxzone", "8 × (station \u2192 jog 60 m \u2192 station). Time only the transitions \u2014 that is the split you are training."],
+      ["Sled push", "6 × 25 m @ " + l.push + " \u2014 low body angle, short steps, continuous."],
+      ["Farmers carry + ski", "4 × (100 m carry @ " + l.carry + " + 250 m SkiErg) \u2014 grip under fatigue."]
+    ][(wk - 1) % 6];
+    return {
+      type: "Skill", title: "Station skill · " + focus[0],
+      blocks: ["<b>" + focus[0] + ":</b> " + focus[1],
+               "Keep the effort controlled. Nothing in the research predicts station times from strength or grip, " +
+               "which points at technique and pacing \u2014 so that is what this session trains.",
+               "Finish with 10 min easy jog."]
+    };
+  }
+
+  function evidenceQuality(phase, wk, miles, ad) {
+    var hard = Math.round(miles * 0.2 * 10) / 10;
+    var b;
+    if (phase === "Base" || phase === "Foundation") {
+      b = ["Warm up 10 min easy",
+           "<b>" + Math.min(8, 4 + wk) + " × 600 m</b> at a hard-but-repeatable effort, 90 s jog between",
+           "Cool down 10 min easy"];
+    } else if (phase === "Taper") {
+      b = ["Warm up 10 min", "<b>3 × 1 km</b> @ race pace" + paceStr() + ", full recovery", "Cool down 10 min"];
+    } else {
+      b = ["Warm up 10 min easy",
+           "<b>" + Math.min(6, 3 + wk) + " × (1 km @ race pace" + paceStr() + " + one station at race load)</b>",
+           "Jog every transition \u2014 the roxzone is scored",
+           "Cool down 10 min easy"];
+    }
+    b.push("<b>This is the week's only hard running.</b> About " + hard +
+           " of your " + miles + " miles sit here; the rest is deliberately easy. " +
+           "Training mostly-hard is the classic way to stall.");
+    return { type: "Run — hard", title: phase === "Base" || phase === "Foundation" ? "Intervals" : "Compromised running", blocks: b };
+  }
+
+  function aerobicRun(miles, share, title, extra) {
+    var d = Math.max(1, Math.round(miles * share * 2) / 2);
+    var b = ["<b>" + d + " miles</b> easy \u2014 conversational the whole way.",
+             "If you cannot talk in full sentences, you are running this too hard."];
+    if (extra) b.push(extra);
+    return { type: "Run — easy", title: title + " · " + d + " mi", blocks: b };
+  }
+
+  var EV_REST = { type: "Rest", title: "Rest", rest: true,
+    blocks: ["<b>A real rest day, on purpose.</b> Recovery in Hyrox is one of the least-studied areas, " +
+             "and concurrent-training research shows interference gets worse as the gap between hard sessions shrinks.",
+             "Still clears your <b>1 mile daily minimum</b> \u2014 a walk counts. Log it."] };
+
   var REST = { type: "Rest", title: "Rest", rest: true,
     blocks: ["Full rest, or a walk.", "Still clear your <b>1 mile daily minimum</b> — a walk counts. Log it in the mile tracker."] };
 
@@ -2558,7 +2647,24 @@ nav.tabs button.tab[aria-current="page"] {
           lR = longRun(ph, m), eR = easyRun(m);
 
       var slots;
-      if (ad.style === "mflh") {
+      if (ad.style === "evidence") {
+        var legs = supportStrength(ph, i + 1, ad, false);
+        var pull = supportStrength(ph, i + 1, ad, true);
+        var skill = stationSkill(ph, i + 1, ad);
+        // the skill work rides the second strength day, keeping five training days
+        pull = { type: "Strength + skill", title: pull.title + " + station skill",
+                 blocks: pull.blocks.concat(["<b>\u2014 then station skill \u2014</b>"]).concat(skill.blocks) };
+        slots = [legs,
+                 aerobicRun(m, 0.28, "Easy aerobic"),
+                 evidenceQuality(ph, i + 1, m, ad),
+                 EV_REST,
+                 pull,
+                 aerobicRun(m, 0.42, "Long run",
+                   "The biggest single block of weekly volume. Running is 59% of race time and the strongest " +
+                   "correlate of finish time, so this is the session that matters most."),
+                 EV_REST];
+      }
+      else if (ad.style === "mflh") {
         // seven days, no rest day: two strength, short / long running, a
         // compromised session, one mixed-modality piece, and a movement day
         slots = [sA, rQ, hy, sB, conditioning(ph, i + 1, ad, ad.cap60), lR, mobility()];
@@ -2619,14 +2725,21 @@ nav.tabs button.tab[aria-current="page"] {
       ? ms(-ad.gap) + "/km faster than target"
       : ms(ad.gap) + "/km slower than target";
 
+    var ev = (P.style || "evidence") === "evidence";
     var changed = ad.emphasis === "run"
       ? ["Weekly running volume raised " + (ad.state === "farBehind" ? "20" : "12") + "%",
-         "A 10-minute tempo block added to the interval session",
+         ev ? "Added to the easy running, not the hard session \u2014 volume is the lever, intensity is already capped"
+            : "A 10-minute tempo block added to the interval session",
          "Strength days held steady so they don't add fatigue"]
-      : ["Running volume left at baseline \u2014 it's doing its job",
-         "Extra sled pull and wall ball volume added to the pull day",
-         "A roxzone transition drill added to the leg day",
-         "Hybrid sessions pointed at sled pull, wall balls and burpee broad jumps"];
+      : ev
+        ? ["Running volume left at baseline \u2014 it's doing its job",
+           "Station work stays skill and pacing practice, not extra load \u2014 nothing in the research predicts " +
+           "station times from strength or grip",
+           "Hard running still capped at one session a week"]
+        : ["Running volume left at baseline \u2014 it's doing its job",
+           "Extra sled pull and wall ball volume added to the pull day",
+           "A roxzone transition drill added to the leg day",
+           "Hybrid sessions pointed at sled pull, wall balls and burpee broad jumps"];
 
     el.innerHTML =
       '<div class="track-top"><span class="status" style="font-size:14px"><span class="dot" style="background:' +
@@ -2816,6 +2929,24 @@ nav.tabs button.tab[aria-current="page"] {
 
   function renderRationale() {
     document.getElementById("rationale").innerHTML =
+      (P.style === "evidence"
+        ? "<p><b>This style is built on the Hyrox literature rather than on published plans.</b> " +
+          "The first peer-reviewed study of a simulated race (11 recreational athletes) found VO\u2082max was the " +
+          "strongest correlate of finish time (\u03c1 = \u22120.71, p = 0.01), endurance training volume next " +
+          "(\u03c1 = \u22120.68), and body fat percentage third (\u03c1 = 0.67) \u2014 while <b>grip strength, muscle " +
+          "mass percentage and resistance-training volume showed no meaningful relationship</b>, and no measured " +
+          "characteristic predicted station times at all. Running was about 59% of total race time. A review of " +
+          "11 studies reaches the same conclusion: running capacity is consistently the strongest determinant.</p>" +
+          "<p>So: running volume leads and is mostly easy, with <b>one hard running session a week</b>; strength is " +
+          "twice weekly as support rather than the headline; stations are trained as <b>skill and pacing</b>, " +
+          "since nothing in the data suggests strength is what decides them; and there are two real rest days, " +
+          "because recovery is among the least-studied areas and concurrent-training interference worsens as the " +
+          "gap between hard sessions shrinks.</p>" +
+          "<p><b>Honest limits:</b> n = 11, treadmill runs, a non-competition sled. The evidence on polarised " +
+          "intensity distribution is real but modest (SMD 0.24, CI 0.01\u20130.48, clearest in trained athletes). " +
+          "This is the best available evidence, which is not the same as strong evidence \u2014 and the station " +
+          "split gaps between elite and average athletes are large, so technique work still earns its place.</p>"
+        : "") +
       "<p>Compiled from published HYROX training plans and coaching guidance, then cut down to what they actually agree on:</p>" +
       "<ul>" +
       "<li><b>Phases counted back from race day</b> — foundation, build, race prep, taper. Every plan surveyed used this shape; only the week counts differed.</li>" +
@@ -2842,6 +2973,9 @@ nav.tabs button.tab[aria-current="page"] {
       '<a href="https://www.clairenesbittcoaching.com/hyrox-tips-and-more/hyrox-pacing-amp-race-strategy" target="_blank" rel="noopener">Claire Nesbitt pacing</a>, ' +
       '<a href="https://hyroxfitness.com/training/hyrox-stations-guide/" target="_blank" rel="noopener">station standards</a>, ' +
       '<a href="https://roxzone.training/blog/hyrox-race-day-strategy" target="_blank" rel="noopener">roxzone strategy</a>, ' +
+      '<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11994925/" target="_blank" rel="noopener">the first Hyrox physiology study</a>, ' +
+      '<a href="https://link.springer.com/article/10.1007/s40279-024-02034-z" target="_blank" rel="noopener">polarised-training meta-analysis</a>, ' +
+      '<a href="https://link.springer.com/article/10.1007/s40279-023-01943-9" target="_blank" rel="noopener">concurrent-training meta-analysis</a>, ' +
       '<a href="https://roxtribe.com/resources/hyrox-doubles-weights" target="_blank" rel="noopener">doubles weights</a>. ' +
       "General training guidance, not medical or coaching advice — scale it to how you actually feel.</p>";
   }
