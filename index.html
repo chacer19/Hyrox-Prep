@@ -213,6 +213,10 @@ tbody tr:hover { background: var(--ghost); }
 .map-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
 .gc-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
 
+.track-top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.track-list { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text-secondary); }
+.track-list li { margin-bottom: 3px; }
+
 /* leaderboard */
 .rank { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 650; width: 1%; white-space: nowrap; }
 tr.you { background: var(--series-1-wash); }
@@ -714,6 +718,16 @@ nav.tabs button.tab[aria-current="page"] {
     </div>
   </section>
 
+  <section class="card" id="trackCard">
+    <div class="card-head">
+      <div>
+        <h2>On track for your target?</h2>
+        <p class="sub">Read from your logged times, and the plan adjusts to it. Updates every time you add a run.</p>
+      </div>
+    </div>
+    <div id="trackOut"></div>
+  </section>
+
   <section class="card">
     <div class="card-head">
       <div>
@@ -806,7 +820,7 @@ nav.tabs button.tab[aria-current="page"] {
 (function (global) {
   "use strict";
 
-  var BUILD  = "2026-09-09.2105";          // stamped at publish time
+  var BUILD  = "2026-10-27.1938";          // stamped at publish time
   var KEY    = "hyroxPrep.v2";       // local-mode roster
   var PREFS  = "hyroxPrep.prefs";    // per-viewer, both modes
   var LEGACY = "hyroxPrep.v1";
@@ -2207,11 +2221,15 @@ nav.tabs button.tab[aria-current="page"] {
     return out;
   }
 
-  function weekMiles(idx, W, base, phase, deload) {
+  function weekMiles(idx, W, base, phase, deload, ad) {
     var lo = base === "low" ? 8 : base === "mod" ? 14 : 20;
     var hi = base === "low" ? 20 : base === "mod" ? 26 : 32;
     var t = W <= 1 ? 1 : idx / (W - 1);
     var v = phase === "Taper" ? hi * 0.5 : lo + (hi - lo) * Math.min(1, t * 1.25);
+    // behind on running: add volume. On target: hold it and spend the effort on stations.
+    if (ad && phase !== "Taper") {
+      if (ad.emphasis === "run") v *= ad.state === "farBehind" ? 1.2 : 1.12;
+    }
     if (deload) v *= 0.75;
     return Math.round(v * 2) / 2;
   }
@@ -2237,10 +2255,70 @@ nav.tabs button.tab[aria-current="page"] {
     return pp ? " (" + ms(pp.perKm) + "/km)" : "";
   }
 
+  /* ============ reading current fitness from logged runs ============
+     Every timed run is evidence. We take the best sustained pace over the last
+     four weeks (runs of at least ~1 mile, so a 400 m rep can't flatter it) and
+     compare it to the pace the target demands.
+
+     The bar is deliberately not "can you hit target pace once". Race pace has to
+     survive eight separate kilometres with a station between each, so a training
+     pace merely EQUAL to target pace is already behind. Comfortable means you can
+     run roughly 20 s/km quicker than target when fresh. */
+  function fitness() {
+    var today = HP.todayISO(), runs = P.runs || [];
+    function inWindow(r, from, to) {
+      var d = HP.dayDiff(r.date, today);
+      return d >= from && d <= to;
+    }
+    var timed = runs.filter(function (r) { return r.seconds != null && r.miles >= 0.9; });
+    var recent = timed.filter(function (r) { return inWindow(r, 0, 28); });
+    var prior  = timed.filter(function (r) { return inWindow(r, 29, 56); });
+
+    function bestPace(a) {
+      var b = null;
+      a.forEach(function (r) { var v = r.seconds / r.miles; if (b === null || v < b) b = v; });
+      return b;
+    }
+    function avgPace(a) {
+      if (!a.length) return null;
+      var sec = 0, mi = 0;
+      a.forEach(function (r) { sec += r.seconds; mi += r.miles; });
+      return mi ? sec / mi : null;
+    }
+    return {
+      timedRuns: recent.length,
+      bestPerMi: bestPace(recent),
+      avgPerMi: avgPace(recent),
+      priorAvgPerMi: avgPace(prior),
+      longest: recent.reduce(function (a, r) { return Math.max(a, r.miles); }, 0),
+      weekly: runs.filter(function (r) { return inWindow(r, 0, 6); })
+                  .reduce(function (a, r) { return a + (Number(r.miles) || 0); }, 0)
+    };
+  }
+
+  var COMFORT = 20;   // s/km a fresh training run should beat target pace by
+
+  function assess() {
+    var pp = planPace(), f = fitness();
+    if (!(P.targetTime > 0) || !pp) return { state: "noTarget", emphasis: "balanced", f: f };
+    if (f.bestPerMi == null) return { state: "noData", emphasis: "balanced", f: f, needKm: pp.perKm };
+
+    var curKm = f.bestPerMi / 1.609344;
+    var gap = curKm - pp.perKm;            // positive = currently slower than the target needs
+    var trend = (f.priorAvgPerMi && f.avgPerMi) ? f.priorAvgPerMi - f.avgPerMi : null;  // positive = getting quicker
+    var state = gap <= -COMFORT ? "ahead" : gap <= 0 ? "onTrack" : gap <= 30 ? "behind" : "farBehind";
+    return {
+      state: state,
+      // running handled -> spend the block where the benchmark gaps actually are
+      emphasis: (state === "ahead" || state === "onTrack") ? "stations" : "run",
+      gap: gap, curKm: curKm, needKm: pp.perKm, trend: trend, f: f, source: pp.source
+    };
+  }
+
   /* ============ session content ============ */
   function L() { return HP.LOADS[HP.DIVISIONS[P.division].loadKey]; }
 
-  function strengthA(phase, wk) {
+  function strengthA(phase, wk, ad) {
     var l = L(), b;
     if (phase === "Base" || phase === "Foundation")
       b = ["<b>Back squat</b> 3 × 8 @ RPE 6 — leave two in the tank",
@@ -2263,10 +2341,14 @@ nav.tabs button.tab[aria-current="page"] {
       b = ["<b>Back squat</b> 2 × 3 @ RPE 6 — movement quality only",
            "<b>Sled push</b> 2 × 25 m at race load, easy",
            "Mobility: hips, ankles, thoracic spine — 10 min"];
+    if (ad && ad.emphasis === "stations" && (phase === "Build" || phase === "Race prep")) {
+      b.push("<b>Roxzone drill</b> 4 × (sled push 25 m \u2192 jog 100 m \u2192 20 wall balls) \u2014 " +
+             "your running is where it needs to be, so the time left is in the transitions");
+    }
     return { type: "Strength A", title: "Legs & posterior chain", blocks: b };
   }
 
-  function strengthB(phase) {
+  function strengthB(phase, ad) {
     var l = L(), b;
     if (phase === "Base" || phase === "Foundation")
       b = ["<b>SkiErg</b> 5 × 250 m easy, 60 s rest — groove the hip hinge",
@@ -2289,10 +2371,19 @@ nav.tabs button.tab[aria-current="page"] {
       b = ["<b>SkiErg</b> 4 × 250 m easy",
            "<b>Farmers carry</b> 2 × 100 m @ " + l.carry,
            "<b>Wall balls</b> 2 × 20 @ " + l.ball + " — rehearse the rhythm, no fatigue"];
+    if (ad && ad.emphasis === "stations" && (phase === "Build" || phase === "Race prep")) {
+      b.push("<b>Extra sled pull</b> 3 × 25 m @ " + l.pull +
+             " \u2014 the single biggest split gap between average and elite");
+      b.push("<b>Extra wall balls</b> 2 × 25 @ " + l.ball + ", unbroken if you can");
+    }
+    if (ad && ad.emphasis === "run" && phase !== "Taper") {
+      b.push("Keep this session brisk \u2014 short rests. Running is the limiter right now, " +
+             "so strength work holds ground rather than adding fatigue.");
+    }
     return { type: "Strength B", title: "Pull, grip & engine", blocks: b };
   }
 
-  function runQuality(phase, wk, miles) {
+  function runQuality(phase, wk, miles, ad) {
     var b;
     if (phase === "Base" || phase === "Foundation")
       b = ["Warm up 10 min easy",
@@ -2311,10 +2402,22 @@ nav.tabs button.tab[aria-current="page"] {
            "Recovery is deliberately short: this is the rhythm of the actual race"];
     else
       b = ["Warm up 10 min", "<b>3 × 1 km</b> @ race pace" + paceStr() + ", full recovery", "Cool down 10 min"];
+    if (ad && ad.emphasis === "run" && phase !== "Taper") {
+      b.push("<b>Then a tempo block:</b> 10 min continuous at about 15 s/km easier than target pace \u2014 " +
+             "added because your logged times are short of what the target needs.");
+    }
+    if (ad && (ad.state === "behind" || ad.state === "farBehind") && (phase === "Build" || phase === "Race prep")) {
+      b.push("Hold target pace on the reps. If you cannot finish the set at that pace, " +
+             "that is the honest signal to ease the target rather than to push harder here.");
+    }
+    if (ad && ad.state === "ahead" && (phase === "Build" || phase === "Race prep")) {
+      b.push("You have margin on this pace \u2014 run the reps controlled rather than fast, and " +
+             "put the spare effort into the stations.");
+    }
     return { type: "Run — quality", title: "Interval session", blocks: b };
   }
 
-  function hybrid(phase, wk, sim) {
+  function hybrid(phase, wk, sim, ad) {
     var l = L(), b, title = "Compromised running";
     if (sim === "full") {
       title = "Full race simulation";
@@ -2343,6 +2446,13 @@ nav.tabs button.tab[aria-current="page"] {
            "Jog transitions, time them"];
     } else {
       b = ["<b>2 rounds:</b> 1 km @ race pace + 25 wall balls @ " + l.ball, "Stop while it still feels easy"];
+    }
+    if (ad && ad.emphasis === "stations" && !sim && (phase === "Build" || phase === "Race prep")) {
+      b.push("<b>Pick from sled pull, wall balls and burpee broad jumps</b> \u2014 the three splits " +
+             "where average athletes lose the most time, and where your remaining minutes are.");
+    }
+    if (ad && ad.emphasis === "run" && !sim && phase === "Build") {
+      b.push("Run the legs honestly here; the station is the interruption, not the point.");
     }
     return { type: sim ? "Simulation" : "Hybrid", title: title, blocks: b, sim: !!sim };
   }
@@ -2381,6 +2491,7 @@ nav.tabs button.tab[aria-current="page"] {
     var dow = HP.parseISO(today).getDay();           // 0 = Sun
     var monday = HP.addDays(today, dow === 0 ? -6 : 1 - dow);
 
+    var ad = assess();
     var weeks = [], simFull = -1, simHalf = -1;
     for (var i = 0; i < W; i++) if (phases[i] === "Build") simHalf = i;          // last build week
     for (i = 0; i < W; i++) if (phases[i] === "Race prep") { simFull = i; break; } // first race-prep week
@@ -2388,11 +2499,11 @@ nav.tabs button.tab[aria-current="page"] {
     for (i = 0; i < W; i++) {
       var ph = phases[i];
       var deload = (ph === "Base" || ph === "Foundation" || ph === "Build") && i % 4 === 3;
-      var m = weekMiles(i, W, base, ph, deload);
+      var m = weekMiles(i, W, base, ph, deload, ad);
       var sim = i === simFull ? "full" : i === simHalf ? "half" : null;
 
-      var sA = strengthA(ph, i + 1), sB = strengthB(ph),
-          rQ = runQuality(ph, i + 1, m), hy = hybrid(ph, i + 1, sim),
+      var sA = strengthA(ph, i + 1, ad), sB = strengthB(ph, ad),
+          rQ = runQuality(ph, i + 1, m, ad), hy = hybrid(ph, i + 1, sim, ad),
           lR = longRun(ph, m), eR = easyRun(m);
 
       var slots;
@@ -2408,7 +2519,7 @@ nav.tabs button.tab[aria-current="page"] {
     }
     var current = 0;
     for (i = 0; i < W; i++) if (HP.dayDiff(weeks[i].start, today) >= 0) current = i;
-    return { weeks: weeks, W: W, current: current, toRace: toRace, phases: phases };
+    return { weeks: weeks, W: W, current: current, toRace: toRace, phases: phases, ad: ad };
   }
 
   /* ============ rendering ============ */
@@ -2425,9 +2536,80 @@ nav.tabs button.tab[aria-current="page"] {
       "</div>";
   }
 
+  function renderTrack(plan) {
+    var el = document.getElementById("trackOut");
+    var ad = plan && plan.ad ? plan.ad : assess();
+    var f = ad.f;
+
+    if (ad.state === "noTarget") {
+      el.innerHTML = '<p class="empty">Set a target finish time below and this starts tracking you against it.</p>';
+      return;
+    }
+    if (ad.state === "noData") {
+      el.innerHTML = '<p class="foot-note">Target pace is <b>' + ms(ad.needKm) +
+        "/km</b>. Log a run of a mile or more <i>with its time</i> and this will tell you how close you are \u2014 " +
+        "and reshape the plan around the answer.</p>";
+      return;
+    }
+
+    var band = {
+      ahead:     { label: "Ahead of target", col: "var(--good)" },
+      onTrack:   { label: "On track", col: "var(--good)" },
+      behind:    { label: "Behind target", col: "var(--serious)" },
+      farBehind: { label: "Well behind target", col: "var(--critical)" }
+    }[ad.state];
+
+    var gapTxt = ad.gap <= 0
+      ? ms(-ad.gap) + "/km faster than target"
+      : ms(ad.gap) + "/km slower than target";
+
+    var changed = ad.emphasis === "run"
+      ? ["Weekly running volume raised " + (ad.state === "farBehind" ? "20" : "12") + "%",
+         "A 10-minute tempo block added to the interval session",
+         "Strength days held steady so they don't add fatigue"]
+      : ["Running volume left at baseline \u2014 it's doing its job",
+         "Extra sled pull and wall ball volume added to the pull day",
+         "A roxzone transition drill added to the leg day",
+         "Hybrid sessions pointed at sled pull, wall balls and burpee broad jumps"];
+
+    el.innerHTML =
+      '<div class="track-top"><span class="status" style="font-size:14px"><span class="dot" style="background:' +
+      band.col + '"></span>' + band.label + "</span>" +
+      '<span class="foot-note">from ' + f.timedRuns + " timed run" + (f.timedRuns === 1 ? "" : "s") +
+      " in the last 4 weeks</span></div>" +
+      '<div class="kpis" style="margin-top:12px;">' +
+        '<div class="kpi"><div class="k-label">Target needs</div><div class="k-value">' + ms(ad.needKm) +
+          '</div><div class="k-note">per km, across all 8 runs</div></div>' +
+        '<div class="kpi"><div class="k-label">Your best recent pace</div><div class="k-value">' + ms(ad.curKm) +
+          '</div><div class="k-note">fastest run of 1 mi+ in 4 weeks</div></div>' +
+        '<div class="kpi"><div class="k-label">Gap</div><div class="k-value ' +
+          (ad.gap <= 0 ? "pos" : "neg") + '">' + (ad.gap <= 0 ? "\u2212" : "+") + ms(Math.abs(ad.gap)) +
+          '</div><div class="k-note">' + HP.esc(gapTxt) + "</div></div>" +
+        (ad.trend != null
+          ? '<div class="kpi"><div class="k-label">Trend</div><div class="k-value ' +
+            (ad.trend > 2 ? "pos" : ad.trend < -2 ? "neg" : "") + '">' +
+            (ad.trend > 2 ? "Improving" : ad.trend < -2 ? "Slipping" : "Flat") +
+            '</div><div class="k-note">vs the 4 weeks before</div></div>'
+          : "") +
+      "</div>" +
+      '<p class="foot-note" style="margin-top:14px;">' +
+      (ad.state === "ahead"
+        ? "You can already run comfortably quicker than the target asks. The plan now spends its effort on the stations."
+        : ad.state === "onTrack"
+          ? "You are inside the margin. Race pace has to survive eight kilometres with a station between each, so \"comfortable\" means about " +
+            ms(COMFORT) + "/km quicker than target when fresh \u2014 you are close enough to that."
+          : ad.state === "behind"
+            ? "Reachable, but it needs the running to come up. Race pace must hold eight times over with stations in between, so being level with target pace when fresh is not yet enough."
+            : "This target is a long way from your current running. Either give it more weeks or ease the target \u2014 the plan has added volume, but volume alone will not close this.") +
+      "</p>" +
+      '<p class="foot-note"><b>What changed in the plan:</b></p><ul class="track-list">' +
+      changed.map(function (c) { return "<li>" + c + "</li>"; }).join("") + "</ul>";
+  }
+
   function render() {
     var plan = buildPlan();
     var div = HP.DIVISIONS[P.division];
+    renderTrack(plan);
 
     document.getElementById("noRace").classList.toggle("hidden", !!P.raceDate);
     renderLoads(div);

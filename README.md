@@ -105,6 +105,27 @@ materially more than the trial suggests you have, the app says so instead of
 quietly prescribing a pace you cannot hold. Without a target it falls back to
 time-trial pace plus the station-fatigue allowance.
 
+### The plan adapts to your logged times
+
+Every timed run of a mile or more is evidence. The app takes your best sustained
+pace over the last four weeks and compares it with what the target demands, then
+reshapes the block around the answer - and re-does it each time you add a run.
+
+The bar is deliberately not "can you hit target pace once". Race pace has to
+survive eight separate kilometres with a station between each, so a training
+pace merely *equal* to target pace is already behind. Comfortable means running
+about 20 s/km quicker than target when fresh.
+
+| Verdict | What the plan does |
+|---|---|
+| Ahead / on track | Running volume held at baseline; extra sled pull and wall ball volume, a roxzone transition drill, and hybrids pointed at the three biggest benchmark gaps |
+| Behind | Weekly volume +12%, a 10-minute tempo block added to the interval session, strength held steady so it does not add fatigue |
+| Well behind | Volume +20%, and the app says plainly that volume alone will not close the gap - give it more weeks or ease the target |
+
+The **On track for your target?** card shows the pace the target needs, your best
+recent pace, the gap, the four-week trend, how many timed runs the read is based
+on, and an explicit list of what changed in the plan because of it.
+
 Note: the published table used for the women's row split is incomplete, so that
 one figure is an estimate and the UI says so.
 
