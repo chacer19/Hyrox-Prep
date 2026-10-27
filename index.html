@@ -830,7 +830,7 @@ nav.tabs button.tab[aria-current="page"] {
 (function (global) {
   "use strict";
 
-  var BUILD  = "2026-10-27.1950";          // stamped at publish time
+  var BUILD  = "2026-10-27.2124";          // stamped at publish time
   var KEY    = "hyroxPrep.v2";       // local-mode roster
   var PREFS  = "hyroxPrep.prefs";    // per-viewer, both modes
   var LEGACY = "hyroxPrep.v1";
@@ -2527,6 +2527,84 @@ nav.tabs button.tab[aria-current="page"] {
     };
   }
 
+  /* ============ five-block session shape ============
+     MFLH 365 sessions are publicly described as 60–75 minutes built from five
+     blocks labelled "Set A" through "Set E", each mixing a different domain.
+     That shape is the one thing worth borrowing: it is a format, not his
+     content. Everything inside these sets is this plan's own programming.
+     Simulations, rest and movement days keep their own shape — a race
+     rehearsal is not five blocks, and neither is a walk. */
+  var MFLH_PRIMER = {
+    "Strength A": "5 min bike or row, then banded hip openers, 2 × 10 air squats, 2 × 8 good mornings",
+    "Strength B": "5 min easy SkiErg, then band pull-aparts 2 × 15, scap pull-ups 2 × 8, 30 s dead hang",
+    "Hybrid": "8 min easy jog, then one unloaded rehearsal of the station you are about to use",
+    "Conditioning": "5 min easy row, then 10 wall balls and 5 burpees at half effort to groove the movements"
+  };
+  var MFLH_FINISHER = [
+    "Hollow hold 3 × 45 s · side plank 3 × 45 s each · suitcase carry 3 × 30 m each side",
+    "Sandbag bear-hug carry 3 × 100 m · dead hang, accumulate 2 min",
+    "3 rounds: 20 hollow rocks · 15 back extensions · 30 s plank"
+  ];
+  var MFLH_SETNAMES = ["main work", "second piece", "the hard part"];
+  /* Gym sessions split into three middle sets. A conditioning piece does not:
+     a metcon is one block, and chopping it into thirds would misrepresent it. */
+  var MFLH_SPLIT = { "Strength A": 1, "Strength B": 1, "Hybrid": 1 };
+  /* Runs, simulations, rest and the movement day keep their own shape — a run
+     is one continuous piece, and so is a race rehearsal. */
+  var MFLH_SKIP = { "Movement": 1, "Run — short": 1, "Run — long": 1,
+                    "Run — easy": 1, "Run — quality": 1 };
+  var MFLH_LETTERS = "ABCDEFG";
+
+  function mflhSets(s, wk, cap) {
+    if (s.rest || s.sim || MFLH_SKIP[s.type]) return s;
+    var acc = [], main = [], i;
+    s.blocks.forEach(function (x) {
+      (/^<b>(Accessory|Mobility):/.test(x) ? acc : main).push(x);
+    });
+    if (!acc.length) acc = ["<b>Grunt work:</b> " + MFLH_FINISHER[(wk - 1) % MFLH_FINISHER.length]];
+    var primer = MFLH_PRIMER[s.type] ||
+      "5–10 min of easy movement, then rehearse the day's patterns unloaded";
+
+    /* An exercise is a bold-led line plus whatever notes follow it, so a
+       coaching note never gets promoted into a set of its own. */
+    var items = [];
+    main.forEach(function (x) {
+      if (!items.length || /^<b>/.test(x)) items.push([x]);
+      else items[items.length - 1].push(x);
+    });
+
+    var groups;
+    if (MFLH_SPLIT[s.type] && items.length >= 3) {
+      var per = Math.ceil(items.length / 3);
+      groups = [];
+      for (i = 0; i < items.length; i += per) {
+        groups.push([].concat.apply([], items.slice(i, i + per)));
+      }
+    } else {
+      groups = [main];
+    }
+    groups = groups.filter(function (g) { return g.length; });
+
+    function bullet(x) { return /^·/.test(x) ? x : "· " + x; }
+    var out = ["<b>Set A — primer.</b> " + primer], n = 1;
+    groups.forEach(function (g, gi) {
+      out.push("<b>Set " + MFLH_LETTERS[n++] + " — " +
+               (groups.length === 1 ? "the piece" : MFLH_SETNAMES[gi]) + "</b>");
+      out = out.concat(g.map(bullet));
+    });
+    var last = MFLH_LETTERS[n];
+    out.push("<b>Set " + last + " — finish</b>");
+    out = out.concat(acc.map(bullet));
+    out.push('<span class="foot-note">' + (n + 1) + " blocks, Set A to Set " + last +
+             ", inside " + (cap ? "60" : "60–75") +
+             " minutes. Move set to set without long rests — " +
+             "the time cap is what keeps the density honest.</span>");
+
+    var o = {}; for (var k in s) if (Object.prototype.hasOwnProperty.call(s, k)) o[k] = s[k];
+    o.blocks = out;
+    return o;
+  }
+
   /* ============ evidence-led sessions ============
      Built on what the Hyrox literature actually supports: VO2max is the
      strongest correlate of race time (rho = -0.71), endurance training volume
@@ -2667,7 +2745,8 @@ nav.tabs button.tab[aria-current="page"] {
       else if (ad.style === "mflh") {
         // seven days, no rest day: two strength, short / long running, a
         // compromised session, one mixed-modality piece, and a movement day
-        slots = [sA, rQ, hy, sB, conditioning(ph, i + 1, ad, ad.cap60), lR, mobility()];
+        slots = [sA, rQ, hy, sB, conditioning(ph, i + 1, ad, ad.cap60), lR, mobility()]
+          .map(function (ss) { return mflhSets(ss, i + 1, ad.cap60); });
       }
       else if (days >= 6)  slots = [sA, rQ, eR, hy, sB, lR, REST];
       else if (days === 5) slots = [sA, rQ, REST, hy, sB, lR, REST];
@@ -2961,6 +3040,12 @@ nav.tabs button.tab[aria-current="page"] {
           "Move Fast Lift Heavy programs are publicly described as having \u2014 training every day rather than " +
           "taking rest days, each day blending different equipment and time domains, running split across long, " +
           "medium and short, and accessory plus mobility work attached to the strength days. " +
+          "Gym sessions are laid out as <b>lettered blocks inside a 60–75 minute window</b> — " +
+          "Set A a primer, B/C/D the main work, Set E a grunt-work finisher; a conditioning day " +
+          "collapses to three, because a metcon is one piece. Runs and simulations keep their own " +
+          "shape. That lettered-block format is what MFLH 365 is described as using, and it is the " +
+          "part genuinely worth borrowing. His Instagram is an apparel and community channel rather " +
+          "than a programming one, so there is nothing further there to take. " +
           "<b>It is not his programming.</b> Those descriptions come from MFLH's own marketing and partner pages, " +
           "not an independent breakdown, and his actual programs are a paid product " +
           '(<a href="https://mflhtrain.com/mflh-365" target="_blank" rel="noopener noreferrer">mflhtrain.com</a>). ' +

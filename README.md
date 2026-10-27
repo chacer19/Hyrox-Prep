@@ -137,6 +137,24 @@ mixed-modality conditioning piece whose time domain rotates week to week
 and a movement day that is explicitly not rest. A "keep sessions under 60 min"
 option drops the mobility blocks.
 
+Gym sessions in this style are laid out as **lettered blocks inside a 60-75
+minute window** - Set A a primer, B/C/D the main work split into three pieces,
+Set E a "grunt work" finisher. A conditioning day collapses to three blocks
+(primer, the piece, finish), because a metcon is one piece and splitting it into
+thirds would misrepresent it. Runs, simulations, rest days and the movement day
+keep their own shape - a long run is one continuous effort, and so is a race
+rehearsal.
+
+That lettered-block format is the session shape MFLH 365 is described as using,
+and it is the only part of his material worth borrowing: a format is not
+content. What goes inside each set is this plan's own programming.
+
+His Instagram (@iamchrisharris, @movefastliftheavy) was checked for programming
+detail and has none worth taking: logged out it serves only the thumbnail grid,
+which is apparel, brand and race photos, and the training highlights sit behind
+the login. The useful structural detail came from his own program pages, not
+Instagram.
+
 This is built from the characteristics Christian Harris's Move Fast Lift Heavy
 programs are *publicly described* as having - daily training, varied equipment
 and time domains, running split long/medium/short, accessory plus mobility.

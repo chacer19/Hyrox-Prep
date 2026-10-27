@@ -5,7 +5,7 @@
    the build it was installed with. Navigations are now network-first: the app
    shell is re-fetched whenever there is a connection, and the cache is the
    offline fallback rather than the default answer. */
-const BUILD = '2026-10-27.1950';
+const BUILD = '2026-10-27.2124';
 const CACHE = 'hyrox-prep-' + BUILD;
 const SHELL = ['./', './index.html', './apple-touch-icon.png', './manifest.webmanifest'];
 
