@@ -7,6 +7,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#161826">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
@@ -628,6 +630,7 @@ nav.tabs button.tab[aria-current="page"] {
           <p class="sub">Teams are just a name everyone types the same way. Create one and share the name, or join one already here.</p>
         </div>
       </div>
+      <div id="teamLocal" class="banner hidden"></div>
       <div id="teamMine"></div>
     </section>
 
@@ -830,7 +833,7 @@ nav.tabs button.tab[aria-current="page"] {
 (function (global) {
   "use strict";
 
-  var BUILD  = "2026-10-27.2124";          // stamped at publish time
+  var BUILD  = "2026-10-28.1518";          // stamped at publish time
   var KEY    = "hyroxPrep.v2";       // local-mode roster
   var PREFS  = "hyroxPrep.prefs";    // per-viewer, both modes
   var LEGACY = "hyroxPrep.v1";
@@ -3252,6 +3255,19 @@ nav.tabs button.tab[aria-current="page"] {
   }
 
   function renderMine() {
+    /* On a hosted copy there is no shared store, so a leaderboard can only ever
+       show the athletes on THIS device. Say so plainly rather than letting
+       someone wait for teammates who will never appear. */
+    var lb = document.getElementById("teamLocal");
+    var local = HP.status().mode !== "shared";
+    lb.classList.toggle("hidden", !local);
+    if (local) {
+      lb.innerHTML = "This copy keeps its data <b>on this device only</b>, so these boards rank the " +
+        "athletes you have added here \u2014 teammates on their own phones will not show up. " +
+        "To compare across people, each person can <b>Export JSON</b> and you import the files " +
+        "into one device, or use the shared link if you have it.";
+    }
+
     var el = document.getElementById("teamMine");
     var mine = (P.team || "").trim();
     var all = HP.teams();

@@ -24,7 +24,8 @@ drop = re.compile(
     r'^\s*(<!doctype html>|</?html[ >]|</?head>|</?body>'
     r'|<meta charset|<meta name="viewport"'
     r'|<link rel="manifest"|<link rel="apple-touch-icon"'
-    r'|<meta name="apple-mobile-web-app-capable"|<meta name="theme-color")', re.I)
+    r'|<meta name="apple-mobile-web-app|<meta name="mobile-web-app'
+    r'|<meta name="theme-color")', re.I)
 t = "\n".join(l for l in lines if not drop.match(l)).strip() + "\n"
 low = t.lower()
 for bad in ("<html", "<body>", "</body>", "<head>", "</head>", "<!doctype"):
